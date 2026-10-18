@@ -78,6 +78,7 @@ export default function GeneratorPage() {
   };
 
   const errorCount = result?.errors.length ?? parsed?.errors.length ?? 0;
+  const hasQuestions = questions.length > 0;
 
   return (
     <div className="container-page py-8 sm:py-12">

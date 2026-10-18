@@ -83,9 +83,9 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#f5f4ef;m
 .progress-bar{flex:1;height:8px;background:var(--ink-100);border-radius:99px;overflow:hidden;}
 .progress-fill{height:100%;background:var(--green);border-radius:99px;transition:width 0.5s ease;}
 .progress-label{font-size:13px;font-weight:700;color:var(--ink-700);white-space:nowrap;}
-.timer-label{font-size:14px;font-weight:800;color:var(--ink-700);white-space:nowrap;display:flex;align-items:center;gap:6px;}
-.timer-label.timer-warn{color:var(--orange);animation:timerPulse 1s ease-in-out infinite;}
-.timer-label.timer-danger{color:var(--red);animation:timerPulse 0.5s ease-in-out infinite;}
+.timer-label{font-size:14px;font-weight:800;color:var(--ink-700);white-space:nowrap;display:flex;align-items:center;gap:6px;padding:5px 14px;border:2px solid var(--ink-300);border-radius:99px;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all 0.3s;}
+.timer-label.timer-warn{color:var(--orange);border-color:var(--orange);background:#fff5e9;animation:timerPulse 1s ease-in-out infinite;}
+.timer-label.timer-danger{color:var(--red);border-color:var(--red);background:#fdeaea;animation:timerPulse 0.5s ease-in-out infinite;}
 @keyframes timerPulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
 
 /* Buttons */
