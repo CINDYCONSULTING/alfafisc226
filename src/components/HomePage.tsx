@@ -72,7 +72,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
           {[
             { n: '01', icon: FileEdit, title: 'Collez vos QCM', text: "Saisissez un titre d'examen et collez vos questions au format fourni. Le parseur reconnaît questions, options, réponses et justifications." },
             { n: '02', icon: Eye, title: 'Visualisez et testez', text: 'Prévisualisez le rendu directement dans le navigateur, avec correction immédiate ou différée au choix.' },
-            { n: '03', icon: Download, title: 'Téléchargez et partagez', text: 'Exportez un fichier HTML autonome. Envoyez-le aux candidats : ils l'ouvrent, répondent et obtiennent leur score.' },
+            { n: '03', icon: Download, title: 'Téléchargez et partagez', text: "Exportez un fichier HTML autonome. Envoyez-le aux candidats : ils l'ouvrent, répondent et obtiennent leur score." },
           ].map((step, i) => {
             const Icon = step.icon;
             return (
