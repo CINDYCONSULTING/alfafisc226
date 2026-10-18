@@ -1,0 +1,612 @@
+import type { QCM } from './qcm';
+
+const RED = '#EF2B2D';
+const GREEN = '#009E49';
+
+const esc = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const escJs = (s: string): string => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '');
+
+const shuffleArray = <T,>(arr: T[]): T[] => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+export interface GenerateOptions {
+  mode: 'immediate' | 'end';
+  showJustification: boolean;
+  shuffleQuestions: boolean;
+  shuffleOptions: boolean;
+}
+
+export function generateExamHtml(title: string, questions: QCM[], options: GenerateOptions): string {
+  const examTitle = title.trim() || 'EXAMEN — ALFA FISC';
+  const dataJs = questions
+    .map(
+      (q) =>
+        `    { id:'${escJs(q.id)}', index:${q.index}, question:'${escJs(q.question)}', options:[${q.options
+          .map((o) => `{letter:'${o.letter}',text:'${escJs(o.text)}'}`)
+          .join(',')}], answer:'${q.answer}', justification:'${escJs(q.justification)}' }`
+    )
+    .join(',\n');
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(examTitle)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\\\(','\\\\)']]},svg:{fontCache:'global'}};</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+:root{--red:#EF2B2D;--green:#009E49;--ink-900:#0e131f;--ink-800:#1a2030;--ink-700:#2a3140;--ink-600:#3f4757;--ink-500:#5f6878;--ink-400:#8a93a5;--ink-300:#b6bdca;--ink-200:#d9dde5;--ink-100:#eef0f4;--ink-50:#f7f8fa;}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink-50);margin:0;color:var(--ink-700);line-height:1.6;}
+.app{max-width:880px;margin:0 auto;min-height:100vh;background:white;box-shadow:0 0 40px rgba(0,0,0,0.05);}
+
+/* Page borders — single color, rounded top & bottom */
+.page-border-top{height:10px;background:linear-gradient(90deg,var(--green) 0%,var(--green) 50%,var(--red) 50%,var(--red) 100%);border-radius:12px 12px 0 0;}
+.page-border-bottom{height:10px;background:linear-gradient(90deg,var(--green) 0%,var(--green) 50%,var(--red) 50%,var(--red) 100%);border-radius:0 0 12px 12px;}
+
+/* Header */
+.exam-header{background:white;padding:24px 24px 20px;}
+.exam-brand-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.brand-block{display:flex;align-items:center;gap:14px;}
+.brand-logo{width:48px;height:48px;border-radius:12px;background:var(--ink-900);display:grid;place-items:center;}
+.brand-logo svg{width:26px;height:26px;}
+.brand-wordmark{font-family:'Times New Roman',Times,serif;font-weight:700;font-style:italic;font-size:28px;line-height:1;letter-spacing:0.01em;}
+.brand-wordmark .alfa{color:var(--green);}
+.brand-wordmark .fisc{color:var(--red);}
+.brand-tag{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-400);font-weight:600;margin-top:4px;}
+.contact-info{font-size:11px;color:var(--ink-400);text-align:right;line-height:1.5;}
+.contact-info strong{color:var(--ink-600);}
+.exam-title-box{margin-top:18px;padding:16px 20px;border:2px solid var(--ink-200);border-radius:14px;text-align:center;background:var(--ink-50);}
+.exam-title-box h1{font-family:'Plus Jakarta Sans';font-size:20px;font-weight:800;color:var(--ink-900);margin:0;letter-spacing:-0.01em;}
+.exam-meta{margin-top:12px;display:flex;gap:18px;font-size:12px;color:var(--ink-400);flex-wrap:wrap;justify-content:center;}
+.exam-meta b{color:var(--ink-600);font-weight:700;}
+
+/* Toolbar */
+.toolbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--ink-100);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.progress-wrap{flex:1;display:flex;align-items:center;gap:14px;min-width:0;}
+.progress-bar{flex:1;height:8px;background:var(--ink-100);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--green);border-radius:99px;transition:width 0.5s ease;}
+.progress-label{font-size:13px;font-weight:700;color:var(--ink-700);white-space:nowrap;}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-family:'Inter';font-weight:700;font-size:14px;padding:11px 20px;border-radius:12px;transition:all 0.15s;}
+.btn-green{background:var(--green);color:#fff;box-shadow:0 5px 0 #007a38,0 7px 16px rgba(0,158,73,0.3);}
+.btn-green:hover{filter:brightness(1.06);}
+.btn-green:active{transform:translateY(4px);box-shadow:0 1px 0 #007a38,0 2px 6px rgba(0,158,73,0.3);}
+.btn-blue{background:#2980b9;color:#fff;box-shadow:0 5px 0 #1a6fb0,0 7px 16px rgba(41,128,185,0.3);}
+.btn-blue:hover{filter:brightness(1.06);}
+.btn-blue:active{transform:translateY(4px);box-shadow:0 1px 0 #1a6fb0,0 2px 6px rgba(41,128,185,0.3);}
+.btn-red{background:var(--red);color:#fff;box-shadow:0 5px 0 #b82325,0 7px 16px rgba(239,43,45,0.3);}
+.btn-red:active{transform:translateY(4px);box-shadow:0 1px 0 #b82325;}
+.btn-ghost{background:var(--ink-50);color:var(--ink-600);border:1px solid var(--ink-200);}
+.btn-ghost:hover{background:var(--ink-100);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:10px;}
+
+/* Question card */
+.content{padding:28px 24px 48px;}
+.q-card{background:white;border:1px solid var(--ink-100);border-radius:18px;padding:28px;box-shadow:0 6px 20px -8px rgba(26,32,48,0.1);animation:fadeIn 0.4s ease both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes slideDown{from{opacity:0;max-height:0;}to{opacity:1;max-height:700px;}}
+@keyframes popIn{0%{opacity:0;transform:scale(0.6);}70%{transform:scale(1.06);}100%{opacity:1;transform:scale(1);}}
+.q-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:99px;font-size:12px;font-weight:700;margin-bottom:14px;}
+.q-chip.idle{background:var(--ink-50);color:var(--ink-500);}
+.q-chip.correct{background:#e6f7ed;color:var(--green);}
+.q-chip.wrong{background:#fdeaea;color:var(--red);}
+.q-text{font-family:'Plus Jakarta Sans';font-size:19px;font-weight:700;color:var(--ink-900);line-height:1.5;margin:0 0 22px;}
+.options{display:grid;gap:12px;}
+.opt{display:flex;align-items:flex-start;gap:14px;width:100%;text-align:left;background:white;border:2px solid var(--ink-200);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all 0.2s;font:inherit;color:inherit;}
+.opt:hover:not(:disabled){border-color:var(--ink-400);transform:translateY(-1px);box-shadow:0 4px 12px -4px rgba(0,0,0,0.1);}
+.opt:disabled{cursor:default;}
+.opt-letter{flex-shrink:0;width:36px;height:36px;border-radius:10px;background:var(--ink-50);color:var(--ink-600);font-family:'Plus Jakarta Sans';font-weight:800;font-size:14px;display:grid;place-items:center;transition:all 0.2s;}
+.opt-text{flex:1;padding-top:5px;font-size:16px;color:var(--ink-700);font-weight:500;}
+.opt.is-correct{border-color:var(--green);background:#e6f7ed;}
+.opt.is-correct .opt-letter{background:var(--green);color:#fff;}
+.opt.is-wrong{border-color:var(--red);background:#fdeaea;}
+.opt.is-wrong .opt-letter{background:var(--red);color:#fff;}
+.opt-mark{margin-left:auto;padding-top:6px;font-weight:800;font-size:18px;}
+.opt.is-correct .opt-mark{color:var(--green);}
+.opt.is-wrong .opt-mark{color:var(--red);}
+
+/* Justification */
+.justif{margin-top:20px;background:#f0f7ff;border:1px solid #c5dcf2;border-left:5px solid #2980b9;border-radius:12px;padding:18px 20px;animation:slideDown 0.4s ease both;overflow:hidden;}
+.justif-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.justif-badge{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:13px;}
+.justif-badge.correct{background:#c8efd8;color:var(--green);}
+.justif-badge.wrong{background:#fbd5d5;color:var(--red);}
+.justif-title{font-family:'Plus Jakarta Sans';font-weight:800;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#1a5a82;}
+.justif-body{font-size:15px;color:var(--ink-600);line-height:1.7;margin:0;}
+
+/* Nav */
+.q-nav{margin-top:22px;display:flex;justify-content:flex-end;}
+.btn-next{background:var(--green);color:#fff;font-size:16px;font-weight:800;padding:13px 28px;border-radius:14px;box-shadow:0 6px 0 #007a38,0 8px 20px rgba(0,158,73,0.35);border:none;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:10px;}
+.btn-next:hover{filter:brightness(1.06);}
+.btn-next:active{transform:translateY(4px);box-shadow:0 2px 0 #007a38,0 3px 8px rgba(0,158,73,0.3);}
+
+/* Dots */
+.dots{margin-top:18px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+.dot{width:10px;height:10px;border-radius:99px;background:var(--ink-200);transition:all 0.2s;border:none;cursor:pointer;padding:0;}
+.dot.active{background:var(--ink-700);transform:scale(1.4);}
+.dot.correct{background:var(--green);}
+.dot.wrong{background:var(--red);}
+
+/* Results */
+.results-wrap{text-align:center;animation:fadeIn 0.5s ease both;padding:8px 0;}
+.score-ring-wrap{position:relative;width:240px;height:240px;margin:0 auto 20px;animation:popIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;}
+.score-ring{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:var(--red);stroke-width:18;}
+.ring-fg{fill:none;stroke:var(--green);stroke-width:18;stroke-linecap:round;transition:stroke-dashoffset 1.2s ease-out;}
+.ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-score{font-family:'Plus Jakarta Sans';font-size:52px;font-weight:800;color:var(--ink-900);line-height:1;}
+.ring-total{font-size:20px;color:var(--ink-400);font-weight:700;}
+.ring-pct{font-size:15px;font-weight:700;color:var(--green);margin-top:4px;}
+.mention-box{display:inline-block;padding:10px 26px;border-radius:99px;font-family:'Plus Jakarta Sans';font-weight:800;font-size:16px;margin:6px 0;}
+.mention-expert{background:#e6f7ed;color:var(--green);border:2px solid var(--green);}
+.mention-confirmed{background:#e6f7ed;color:#007a38;border:2px solid var(--green);}
+.mention-progress{background:var(--ink-100);color:var(--ink-600);border:2px solid var(--ink-300);}
+.mention-weak{background:#fdeaea;color:var(--red);border:2px solid var(--red);}
+.results-msg{color:var(--ink-500);font-size:15px;max-width:400px;margin:12px auto 0;}
+.results-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:26px;}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:420px;margin:24px auto 0;}
+.stat{background:var(--ink-50);border:1px solid var(--ink-100);border-radius:14px;padding:16px;}
+.stat-val{font-family:'Plus Jakarta Sans';font-size:28px;font-weight:800;}
+.stat-lbl{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-400);margin-top:2px;}
+.stat-correct .stat-val{color:var(--green);}
+.stat-wrong .stat-val{color:var(--red);}
+
+/* Correction review */
+.review-section{margin-top:32px;text-align:left;}
+.review-title{font-family:'Plus Jakarta Sans';font-size:18px;font-weight:800;color:var(--ink-900);margin:0 0 16px;display:flex;align-items:center;gap:8px;}
+.review-item{background:white;border:1px solid var(--ink-100);border-left:5px solid var(--red);border-radius:12px;padding:16px;margin-bottom:12px;}
+.review-item.is-correct{border-left-color:var(--green);}
+.review-q{font-size:15px;font-weight:700;color:var(--ink-900);margin:0 0 8px;}
+.review-opts{display:grid;gap:6px;margin:10px 0;}
+.review-opt{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:8px;font-size:14px;}
+.review-opt.correct{background:#e6f7ed;color:#006633;font-weight:600;}
+.review-opt.wrong-pick{background:#fdeaea;color:var(--red);font-weight:600;}
+.review-opt .letter{font-weight:800;font-family:'Plus Jakarta Sans';min-width:18px;}
+.review-justif{margin-top:10px;background:#f0f7ff;border-left:4px solid #2980b9;border-radius:8px;padding:12px 14px;font-size:14px;color:var(--ink-600);line-height:1.6;}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(14,19,31,0.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;animation:fadeIn 0.2s ease;}
+.modal{background:white;border-radius:20px;padding:32px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;}
+.modal h3{font-family:'Plus Jakarta Sans';font-size:20px;font-weight:800;color:var(--ink-900);margin:0 0 8px;text-align:center;}
+.modal p{font-size:14px;color:var(--ink-500);text-align:center;margin:0 0 20px;}
+.modal input{width:100%;padding:13px 16px;border:2px solid var(--ink-200);border-radius:12px;font-size:15px;font-weight:600;color:var(--ink-900);outline:none;transition:border-color 0.2s;margin-bottom:16px;}
+.modal input:focus{border-color:var(--green);}
+.modal-actions{display:flex;gap:10px;}
+.modal-actions .btn{flex:1;}
+
+/* Print layout for correction PDF — formal exam format */
+#print-root{display:none;}
+@media print{
+  body *{visibility:hidden;}
+  #print-root,#print-root *{visibility:visible;}
+  #print-root{display:block;position:absolute;left:0;top:0;width:100%;background:white;}
+  @page{margin:0;size:A4;}
+  .print-page{width:210mm;min-height:297mm;padding:12mm;page-break-after:always;position:relative;}
+  .print-main-border{border:3px solid #000;border-radius:14px;padding:10mm;min-height:273mm;display:flex;flex-direction:column;position:relative;}
+  .print-header-top{display:flex;justify-content:space-between;font-weight:bold;font-size:11px;border-bottom:2px solid var(--green);padding-bottom:6px;margin-bottom:12px;}
+  .print-brand{font-family:'Times New Roman',Times,serif;font-weight:700;font-style:italic;font-size:15px;}
+  .print-brand .alfa{color:var(--green);}
+  .print-brand .fisc{color:var(--red);}
+  .print-contact{font-style:italic;font-size:10px;color:#444;}
+  .print-title-box{border:2px solid var(--green);border-radius:10px;padding:14px;text-align:center;margin-bottom:20px;background:#fafffe;box-shadow:3px 3px 0 var(--green);}
+  .print-title-box h1{margin:0;font-size:20px;text-transform:uppercase;font-weight:800;font-family:'Plus Jakarta Sans';color:var(--ink-900);}
+  .print-candidate{border:2px solid var(--ink-300);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:13px;font-weight:700;text-align:center;background:var(--ink-50);}
+  .print-candidate span{color:var(--ink-900);font-size:15px;}
+  .print-q{margin-bottom:18px;}
+  .print-q-text{font-weight:700;font-size:14px;margin-bottom:6px;text-align:justify;line-height:1.5;}
+  .print-opt{display:block;font-size:13px;margin-left:22px;margin-bottom:4px;line-height:1.4;}
+  .print-corr-table{width:100%;border-collapse:collapse;margin:10px 0 20px;}
+  .print-corr-table td{border:2px solid #000;text-align:center;padding:7px;font-weight:700;font-size:15px;}
+  .print-row-num{background:#eee;font-size:11px;}
+  .print-row-ans td{font-size:18px;color:var(--red);}
+  .print-row-ans td.correct{color:var(--green);}
+  .print-justif-title{font-size:14px;font-weight:800;text-transform:uppercase;margin:18px 0 10px;border-bottom:2px dashed #000;padding-bottom:6px;}
+  .print-justif-item{font-size:12px;margin-bottom:10px;text-align:justify;line-height:1.5;}
+  .print-justif-item strong{color:var(--green);}
+  .print-footer{text-align:center;font-size:11px;margin-top:auto;border-top:2px solid var(--green);padding-top:6px;}
+  .print-footer em{font-family:'Times New Roman',Times,serif;font-weight:700;font-style:italic;}
+  .print-page-num{position:absolute;bottom:6mm;right:8mm;border:1.5px solid #000;border-radius:8px;padding:3px 10px;font-weight:700;font-size:11px;background:white;}
+}
+
+@media (max-width:640px){
+  .exam-header,.toolbar,.content{padding-left:16px;padding-right:16px;}
+  .q-card{padding:22px 16px;}
+  .q-text{font-size:17px;}
+  .stats{grid-template-columns:1fr 1fr 1fr;}
+  .ring-score{font-size:42px;}
+  .brand-wordmark{font-size:22px;}
+  .exam-meta{font-size:11px;gap:12px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="page-border-top"></div>
+
+  <header class="exam-header">
+    <div class="exam-brand-row">
+      <div class="brand-block">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="#009E49" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 12v5c3 2.5 9 2.5 12 0v-5" stroke="#EF2B2D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-wordmark"><span class="alfa">ALFA</span> <span class="fisc">FISC</span></div>
+          <div class="brand-tag">Préparation Concours</div>
+        </div>
+      </div>
+      <div class="contact-info">
+        <strong>Facebook:</strong> ALFA FISC POUR LES DÉBUTANTS<br>
+        <strong>WhatsApp:</strong> +226 66 47 70 70
+      </div>
+    </div>
+    <div class="exam-title-box">
+      <h1>${esc(examTitle)}</h1>
+    </div>
+    <div class="exam-meta">
+      <span><b>Questions:</b> ${questions.length}</span>
+      <span><b>Mode:</b> ${options.mode === 'immediate' ? 'Correction immédiate' : 'Correction à la fin'}</span>
+    </div>
+  </header>
+
+  <div class="toolbar" id="toolbar">
+    <div class="progress-wrap">
+      <span class="progress-label" id="progressLabel">Question 1 / ${questions.length}</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <main class="content">
+    <div id="quiz"></div>
+    <div class="dots" id="dots"></div>
+  </main>
+
+  <div class="page-border-bottom"></div>
+</div>
+
+<!-- Print root for correction PDF -->
+<div id="print-root"></div>
+
+<!-- Modal container -->
+<div id="modal-root"></div>
+
+<script>
+const RAW_QUESTIONS = [
+${dataJs}
+];
+const MODE = '${options.mode}';
+const SHOW_JUST = ${options.showJustification};
+const SHUFFLE_Q = ${options.shuffleQuestions};
+const SHUFFLE_O = ${options.shuffleOptions};
+
+let QUESTIONS = [];
+let current = 0;
+let answers = [];
+let validated = [];
+let candidateName = '';
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function initQuestions(){
+  let qs = RAW_QUESTIONS.map(q=>{
+    const opts = SHUFFLE_O ? shuffle(q.options) : [...q.options];
+    return {...q, options: opts};
+  });
+  if(SHUFFLE_Q) qs = shuffle(qs);
+  return qs;
+}
+
+function startExam(){
+  QUESTIONS = initQuestions();
+  current = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  validated = new Array(QUESTIONS.length).fill(false);
+  render();
+}
+
+const quizEl = document.getElementById('quiz');
+const dotsEl = document.getElementById('dots');
+const progressFill = document.getElementById('progressFill');
+const progressLabel = document.getElementById('progressLabel');
+
+function renderDots(){
+  dotsEl.innerHTML = '';
+  QUESTIONS.forEach((q,i)=>{
+    const b = document.createElement('button');
+    b.className = 'dot' + (i===current?' active':'') + (validated[i]?(answers[i]===q.answer?' correct':' wrong'):'');
+    b.title = 'Question ' + (i+1);
+    b.onclick = ()=>{ if(i<=current || validated[i]) { current=i; render(); } };
+    dotsEl.appendChild(b);
+  });
+}
+
+function render(){
+  if(current >= QUESTIONS.length){ renderResults(); return; }
+  const q = QUESTIONS[current];
+  const isV = validated[current];
+  const userAns = answers[current];
+  const correct = isV && userAns === q.answer;
+
+  progressLabel.textContent = 'Question ' + (current+1) + ' / ' + QUESTIONS.length;
+  progressFill.style.width = Math.round((current/QUESTIONS.length)*100) + '%';
+
+  let html = '<div class="q-card">';
+  html += '<span class="q-chip ' + (isV ? (correct?'correct':'wrong') : 'idle') + '">' + (isV ? (correct?'Correct':'Incorrect') : ('Question ' + (current+1))) + '</span>';
+  html += '<h2 class="q-text">' + q.question + '</h2>';
+  html += '<div class="options">';
+  q.options.forEach(opt=>{
+    const isAns = opt.letter === q.answer;
+    const isUser = opt.letter === userAns;
+    let cls = '', mark = '';
+    if(isV){
+      if(isAns){ cls=' is-correct'; mark=' ✓'; }
+      else if(isUser && !isAns){ cls=' is-wrong'; mark=' ✕'; }
+    }
+    const handler = isV ? 'disabled' : 'onclick="selectAnswer(\\''+opt.letter+'\\')"';
+    html += '<button class="opt'+cls+'" '+handler+'>';
+    html += '<span class="opt-letter">'+opt.letter+'</span>';
+    html += '<span class="opt-text">'+opt.text+'</span>';
+    if(mark) html += '<span class="opt-mark">'+mark+'</span>';
+    html += '</button>';
+  });
+  html += '</div>';
+
+  if(isV && SHOW_JUST){
+    html += '<div class="justif"><div class="justif-head">';
+    html += '<div class="justif-badge '+(correct?'correct':'wrong')+'">'+(correct?'✓':'✕')+'</div>';
+    html += '<div class="justif-title">Justification</div></div>';
+    html += '<p class="justif-body">'+q.justification+'</p></div>';
+  }
+
+  if(isV){
+    const last = current+1 >= QUESTIONS.length;
+    html += '<div class="q-nav"><button class="btn-next" onclick="next()">'+(last?'Voir les résultats':'Question suivante')+' →</button></div>';
+  }
+  html += '</div>';
+  quizEl.innerHTML = html;
+  renderDots();
+  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([quizEl]);
+}
+
+function selectAnswer(letter){
+  answers[current] = letter;
+  if(MODE === 'end'){
+    validated[current] = false;
+    if(current+1 < QUESTIONS.length){ current++; }
+    else { finishExam(); }
+    render();
+    return;
+  }
+  validated[current] = true;
+  render();
+}
+
+function next(){
+  if(current+1 < QUESTIONS.length){ current++; }
+  else { finishExam(); }
+  render();
+}
+
+function finishExam(){
+  for(let i=0;i<QUESTIONS.length;i++) if(answers[i]!==null) validated[i]=true;
+  current = QUESTIONS.length;
+}
+
+function getScore(){ let s=0; for(let i=0;i<QUESTIONS.length;i++) if(answers[i]===QUESTIONS[i].answer) s++; return s; }
+
+function renderResults(){
+  const score = getScore();
+  const total = QUESTIONS.length;
+  const pct = Math.round((score/total)*100);
+  const circ = 2 * Math.PI * 105;
+  const greenLen = (score/total) * circ;
+  const offset = circ - greenLen;
+
+  let mention='mention-weak', label='À renforcer', msg='Reprenez les points clés et relancez un test.';
+  if(pct>=90){mention='mention-expert';label='Expert';msg='Maîtrise exceptionnelle. Vous êtes prêt pour le concours.';}
+  else if(pct>=75){mention='mention-confirmed';label='Confirmé';msg='Très bon niveau. Quelques détails à peaufiner.';}
+  else if(pct>=50){mention='mention-progress';label='En progrès';msg='Des bases solides, continuez vos révisions.';}
+
+  progressFill.style.width='100%';
+  progressLabel.textContent='Terminé';
+
+  const allCorrect = score === total;
+  const ringFgStyle = allCorrect
+    ? 'stroke-dasharray:'+circ+';stroke-dashoffset:0;'
+    : 'stroke-dasharray:'+circ+';stroke-dashoffset:'+offset+';';
+
+  let html = '<div class="results-wrap">';
+  html += '<div class="score-ring-wrap">';
+  html += '<svg class="score-ring" width="240" height="240" viewBox="0 0 240 240">';
+  html += '<circle class="ring-bg" cx="120" cy="120" r="105"/>';
+  html += '<circle class="ring-fg" cx="120" cy="120" r="105" style="'+ringFgStyle+'"/>';
+  html += '</svg>';
+  html += '<div class="ring-label"><div class="ring-score">'+score+'</div><div class="ring-total">/ '+total+'</div><div class="ring-pct">'+pct+'%</div></div>';
+  html += '</div>';
+  html += '<div class="mention-box '+mention+'">'+label+'</div>';
+  html += '<p class="results-msg">'+msg+'</p>';
+
+  html += '<div class="stats">';
+  html += '<div class="stat stat-correct"><div class="stat-val">'+score+'</div><div class="stat-lbl">Correctes</div></div>';
+  html += '<div class="stat stat-wrong"><div class="stat-val">'+(total-score)+'</div><div class="stat-lbl">Ratées</div></div>';
+  html += '<div class="stat"><div class="stat-val" style="color:var(--ink-700)">'+pct+'%</div><div class="stat-lbl">Réussite</div></div>';
+  html += '</div>';
+
+  // Actions
+  const missed = QUESTIONS.filter((_,i)=>answers[i]!==QUESTIONS[i].answer).length;
+  html += '<div class="results-actions">';
+  html += '<button class="btn btn-green" onclick="showCorrectionReview()">Voir la correction</button>';
+  html += '<button class="btn btn-blue" onclick="promptNameForPdf()">Télécharger la correction (PDF)</button>';
+  if(missed > 0){
+    html += '<button class="btn btn-red btn-sm" onclick="retryMissed()">Reprendre les ratées ('+missed+')</button>';
+  }
+  html += '<button class="btn btn-ghost btn-sm" onclick="restartAll()">Tout reprendre</button>';
+  html += '</div>';
+
+  html += '<div id="correction-review"></div>';
+  html += '</div>';
+  quizEl.innerHTML = html;
+  dotsEl.innerHTML = '';
+  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([quizEl]);
+}
+
+function showCorrectionReview(){
+  const el = document.getElementById('correction-review');
+  if(!el) return;
+  let html = '<div class="review-section"><h3 class="review-title">Correction détaillée</h3>';
+  QUESTIONS.forEach((q,i)=>{
+    const u = answers[i];
+    const ok = u === q.answer;
+    html += '<div class="review-item'+(ok?' is-correct':'')+'">';
+    html += '<p class="review-q">Q'+(i+1)+'. '+q.question+'</p>';
+    html += '<div class="review-opts">';
+    q.options.forEach(opt=>{
+      const isAns = opt.letter === q.answer;
+      const isUser = opt.letter === u;
+      let cls = '';
+      if(isAns) cls = ' correct';
+      else if(isUser && !isAns) cls = ' wrong-pick';
+      html += '<div class="review-opt'+cls+'"><span class="letter">'+opt.letter+'.</span><span>'+opt.text+'</span></div>';
+    });
+    html += '</div>';
+    if(SHOW_JUST){
+      html += '<div class="review-justif"><strong>Justification:</strong> '+q.justification+'</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([el]);
+}
+
+function retryMissed(){
+  const missed = QUESTIONS.filter((_,i)=>answers[i]!==QUESTIONS[i].answer);
+  if(missed.length === 0) return;
+  QUESTIONS = missed.map(q=>{
+    const opts = SHUFFLE_O ? shuffle(q.options) : [...q.options];
+    return {...q, options: opts};
+  });
+  if(SHUFFLE_Q) QUESTIONS = shuffle(QUESTIONS);
+  current = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  validated = new Array(QUESTIONS.length).fill(false);
+  render();
+}
+
+function restartAll(){
+  startExam();
+}
+
+/* Name modal → PDF */
+function promptNameForPdf(){
+  const root = document.getElementById('modal-root');
+  root.innerHTML = '<div class="modal-overlay"><div class="modal">'+
+    '<h3>Télécharger la correction</h3>'+
+    '<p>Veuillez saisir votre nom et prénom pour personnaliser le fichier.</p>'+
+    '<input id="nameInput" type="text" placeholder="Nom et prénom" autocomplete="name">'+
+    '<div class="modal-actions">'+
+    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>'+
+    '<button class="btn btn-green" onclick="confirmDownloadPdf()">OK — Télécharger</button>'+
+    '</div></div></div>';
+  setTimeout(()=>{ const inp=document.getElementById('nameInput'); if(inp) inp.focus(); }, 100);
+}
+
+function closeModal(){ document.getElementById('modal-root').innerHTML = ''; }
+
+function confirmDownloadPdf(){
+  const inp = document.getElementById('nameInput');
+  const name = inp ? inp.value.trim() : '';
+  if(!name){ if(inp){ inp.style.borderColor='var(--red)'; inp.focus(); } return; }
+  candidateName = name;
+  closeModal();
+  buildPrintDocument(name);
+  setTimeout(()=>{ window.print(); }, 350);
+}
+
+function buildPrintDocument(name){
+  const score = getScore();
+  const total = QUESTIONS.length;
+  const printRoot = document.getElementById('print-root');
+  let html = '';
+
+  // Page 1: Questions
+  html += '<div class="print-page"><div class="print-main-border">';
+  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">ALFA</span> <span class="fisc">FISC</span> — POUR LES DÉBUTANTS</span><span class="print-contact">Facebook: ALFA FISC POUR LES DÉBUTANTS · WhatsApp: +226 66 47 70 70</span></div>';
+  html += '<div class="print-title-box"><h1>${escJs(examTitle)}</h1></div>';
+  html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span> · Score: <span>'+score+' / '+total+'</span></div>';
+  html += '<div class="print-content">';
+  QUESTIONS.forEach((q,i)=>{
+    html += '<div class="print-q">';
+    html += '<span class="print-q-text">'+(i+1)+'. '+q.question+'</span>';
+    q.options.forEach(opt=>{
+      html += '<span class="print-opt">'+opt.letter+'. '+opt.text+'</span>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\'EXCELLENCE</em></div>';
+  html += '<div class="print-page-num">Page 1 / 3</div>';
+  html += '</div></div>';
+
+  // Page 2: Answer table
+  html += '<div class="print-page"><div class="print-main-border">';
+  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">ALFA</span> <span class="fisc">FISC</span> — POUR LES DÉBUTANTS</span><span class="print-contact">WhatsApp: +226 66 47 70 70</span></div>';
+  html += '<div class="print-title-box"><h1>RÉPONSES — ${escJs(examTitle)}</h1></div>';
+  html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span></div>';
+  // answer table in chunks of 10
+  for(let i=0;i<QUESTIONS.length;i+=10){
+    const chunk = QUESTIONS.slice(i, i+10);
+    html += '<table class="print-corr-table"><tr class="print-row-num">';
+    chunk.forEach((q,ci)=> html += '<td>Q'+(i+ci+1)+'</td>');
+    html += '</tr><tr class="print-row-ans">';
+    chunk.forEach((q,ci)=>{
+      const uAns = answers[i+ci];
+      const ok = uAns === q.answer;
+      html += '<td class="'+(ok?'correct':'')+'">'+q.answer+'</td>';
+    });
+    html += '</tr></table>';
+  }
+  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\'EXCELLENCE</em></div>';
+  html += '<div class="print-page-num">Page 2 / 3</div>';
+  html += '</div></div>';
+
+  // Page 3: Justifications
+  html += '<div class="print-page"><div class="print-main-border">';
+  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">ALFA</span> <span class="fisc">FISC</span> — POUR LES DÉBUTANTS</span><span class="print-contact">WhatsApp: +226 66 47 70 70</span></div>';
+  html += '<div class="print-title-box"><h1>EXPLICATIONS — ${escJs(examTitle)}</h1></div>';
+  html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span></div>';
+  html += '<div class="print-justif-title">Justifications et Explications</div>';
+  QUESTIONS.forEach((q,i)=>{
+    html += '<div class="print-justif-item"><strong>Q'+(i+1)+' :</strong> '+q.justification+'</div>';
+  });
+  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\'EXCELLENCE</em></div>';
+  html += '<div class="print-page-num">Page 3 / 3</div>';
+  html += '</div></div>';
+
+  printRoot.innerHTML = html;
+  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([printRoot]);
+}
+
+function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+startExam();
+</script>
+</body>
+</html>`;
+}

@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+html { scroll-behavior: smooth; }
+body {
+  @apply font-sans text-ink-700 antialiased bg-ink-50;
+}
+::selection { @apply bg-alfa-green/20 text-ink-900; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-ink-200 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-ink-300; }
+
+@layer components {
+  .container-page { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8; }
+
+  .btn-3d-green {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-alfa-green text-white font-bold tracking-tight
+           shadow-3d-green active:shadow-3d-green-press active:translate-y-1.5 transition-all duration-150 hover:brightness-105;
+  }
+  .btn-3d-blue {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#2980b9] text-white font-bold tracking-tight
+           shadow-3d-blue active:shadow-3d-blue-press active:translate-y-1.5 transition-all duration-150 hover:brightness-105;
+  }
+  .btn-3d-ink {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-ink-800 text-white font-bold tracking-tight
+           shadow-3d-ink active:translate-y-1.5 transition-all duration-150 hover:bg-ink-900;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white text-ink-600 font-medium border border-ink-200 hover:border-ink-300 hover:text-ink-900 transition-all duration-200;
+  }
+  .card { @apply bg-white rounded-2xl border border-ink-100 shadow-soft; }
+  .input-field {
+    @apply w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-ink-900 placeholder-ink-300 focus:border-alfa-green focus:ring-2 focus:ring-alfa-green/20 outline-none transition-all duration-200;
+  }
+  .label-chip { @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider; }
+}
+
+/* Brand wordmark — Times New Roman, bold italic, ALFA green / FISC red */
+.brand-wordmark {
+  font-family: 'Times New Roman', Times, serif;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+.brand-wordmark .alfa { color: #009E49; }
+.brand-wordmark .fisc { color: #EF2B2D; }
+
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(26,32,48,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(26,32,48,0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+.bg-grid-dark {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
