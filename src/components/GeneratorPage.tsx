@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   FileEdit, Eye, Download, Sparkles, ClipboardPaste, Trash2,
-  AlertTriangle, CheckCircle2, ChevronDown, Settings2, Printer, Play, Shuffle, Timer,
+  AlertTriangle, CheckCircle2, ChevronDown, Settings2, Printer, Play, Shuffle, Timer, Hash,
 } from 'lucide-react';
 import { parseQCMText, SAMPLE_QCM, type ParseResult, type QCM } from '@/lib/qcm';
 import { generateExamHtml, type GenerateOptions } from '@/lib/generateExam';
@@ -16,6 +16,8 @@ export default function GeneratorPage() {
   const [shuffleQuestions, setShuffleQuestions] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
   const [durationMin, setDurationMin] = useState(0);
+  const [fileName, setFileName] = useState('');
+  const [fileNumber, setFileNumber] = useState('');
   const [result, setResult] = useState<ParseResult | null>(null);
 
   const parsed = useMemo(() => (text.trim() ? parseQCMText(text) : null), [text]);
@@ -31,12 +33,14 @@ export default function GeneratorPage() {
   const handleDownload = () => {
     const res = result ?? parseQCMText(text);
     if (res.questions.length === 0) return;
+    if (!fileName.trim()) return;
     const html = generateExamHtml(title, res.questions, buildOptions());
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const safeName = (title.trim() || 'examen-alfa-fisc')
-      .toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 60);
+    const numPart = fileNumber.trim() ? `${fileNumber.trim().padStart(2, '0')}-` : '';
+    const safeName = (numPart + fileName.trim())
+      .replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 80);
     a.href = url;
     a.download = `${safeName}.html`;
     document.body.appendChild(a);
@@ -67,12 +71,13 @@ export default function GeneratorPage() {
     setResult(null);
   };
 
+  const canDownload = hasQuestions && fileName.trim().length > 0;
+
   const pasteFromClipboard = () => {
     navigator.clipboard?.readText().then((t) => { setText(t); setResult(null); }).catch(() => {});
   };
 
   const errorCount = result?.errors.length ?? parsed?.errors.length ?? 0;
-  const hasQuestions = questions.length > 0;
 
   return (
     <div className="container-page py-8 sm:py-12">
@@ -226,6 +231,38 @@ Justification : [Explication ou base juridique]
               <h3 className="font-display font-bold text-ink-900">Configuration</h3>
             </div>
 
+            {/* File name + number */}
+            <div className="mb-5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-ink-500 mb-2">
+                Nom du fichier & numéro
+              </label>
+              <div className="flex gap-2">
+                <div className="relative w-24 flex-shrink-0">
+                  <Hash className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={fileNumber}
+                    onChange={(e) => setFileNumber(e.target.value.replace(/[^\w]/g, ''))}
+                    className="input-field pl-8 font-semibold text-sm"
+                    placeholder="N°"
+                    maxLength={5}
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  className="input-field font-semibold text-sm flex-1"
+                  placeholder="Nom du fichier (ex: culture-fiscale)"
+                />
+              </div>
+              <p className="mt-2 text-xs text-ink-400 leading-relaxed">
+                {fileName.trim()
+                  ? <>Le fichier se téléchargera sous le nom <span className="font-bold text-ink-700">{(fileNumber.trim() ? `${fileNumber.trim().padStart(2, '0')}-` : '') + fileName.trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')}.html</span></>
+                  : 'Obligatoire — le nom du fichier téléchargé sera généré automatiquement à partir de ce champ.'}
+              </p>
+            </div>
+
             {/* Mode */}
             <div className="mb-5">
               <label className="block text-xs font-semibold uppercase tracking-wider text-ink-500 mb-2">
@@ -333,12 +370,18 @@ Justification : [Explication ou base juridique]
             </button>
             <button
               onClick={handleDownload}
-              disabled={!hasQuestions}
+              disabled={!canDownload}
               className="btn-3d-green w-full disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Download className="w-4 h-4" />
               Télécharger le fichier HTML
             </button>
+            {!fileName.trim() && hasQuestions && (
+              <p className="text-xs text-alfa-red font-semibold flex items-center gap-1.5 -mt-1">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Renseignez le nom du fichier ci-dessus pour activer le téléchargement.
+              </p>
+            )}
             <p className="text-xs text-ink-400 leading-relaxed pt-1">
               Le fichier téléchargé est un HTML autonome : ouvrable par double-clic, sans connexion, avec correction interactive et export PDF intégré.
             </p>
