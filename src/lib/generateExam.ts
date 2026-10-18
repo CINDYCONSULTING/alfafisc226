@@ -211,38 +211,45 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#f5f4ef;m
 .modal-actions{display:flex;gap:10px;}
 .modal-actions .btn{flex:1;}
 
-/* Print layout for correction PDF — formal exam format */
+/* Print layout for correction PDF — flowing A4 with auto page breaks */
 #print-root{display:none;}
 @media print{
   body *{visibility:hidden;}
   #print-root,#print-root *{visibility:visible;}
   #print-root{display:block;position:absolute;left:0;top:0;width:100%;background:white;}
-  @page{margin:0;size:A4;}
-  .print-page{width:210mm;min-height:297mm;padding:12mm;page-break-after:always;position:relative;}
-  .print-main-border{border:3px solid #000;border-radius:14px;padding:10mm;min-height:273mm;display:flex;flex-direction:column;position:relative;}
-  .print-header-top{display:flex;justify-content:space-between;font-weight:bold;font-size:11px;border-bottom:2px solid var(--green);padding-bottom:6px;margin-bottom:12px;}
-  .print-brand{font-family:'Times New Roman',Times,serif;font-weight:700;font-style:italic;font-size:15px;}
+  @page{size:A4;margin:16mm 15mm 18mm 15mm;
+    @bottom-right{content:"Page " counter(page) " / " counter(pages);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;color:#000;}
+    @bottom-center{content:"Alfa fisc — Avec Alfa fisc, visez l'excellence";font-family:'Times New Roman',serif;font-style:italic;font-size:9px;color:#777;}
+  }
+  .print-doc{width:100%;background:white;}
+  .print-brand-bar{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--green);padding-bottom:8px;margin-bottom:14px;font-size:11px;font-weight:700;}
+  .print-brand{font-family:'Times New Roman',Times,serif;font-style:italic;font-size:16px;font-weight:700;}
   .print-brand .alfa{color:var(--green);}
   .print-brand .fisc{color:var(--red);}
-  .print-contact{font-style:italic;font-size:10px;color:#444;}
-  .print-title-box{border:2px solid var(--green);border-radius:10px;padding:14px;text-align:center;margin-bottom:20px;background:#fafffe;box-shadow:3px 3px 0 var(--green);}
-  .print-title-box h1{margin:0;font-size:20px;text-transform:uppercase;font-weight:800;font-family:'Plus Jakarta Sans';color:var(--ink-900);}
-  .print-candidate{border:2px solid var(--ink-300);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:13px;font-weight:700;text-align:center;background:var(--ink-50);}
-  .print-candidate span{color:var(--ink-900);font-size:15px;}
-  .print-q{margin-bottom:18px;}
-  .print-q-text{font-weight:700;font-size:14px;margin-bottom:6px;text-align:justify;line-height:1.5;}
-  .print-opt{display:block;font-size:13px;margin-left:22px;margin-bottom:4px;line-height:1.4;}
-  .print-corr-table{width:100%;border-collapse:collapse;margin:10px 0 20px;}
-  .print-corr-table td{border:2px solid #000;text-align:center;padding:7px;font-weight:700;font-size:15px;}
-  .print-row-num{background:#eee;font-size:11px;}
-  .print-row-ans td{font-size:18px;color:var(--red);}
-  .print-row-ans td.correct{color:var(--green);}
-  .print-justif-title{font-size:14px;font-weight:800;text-transform:uppercase;margin:18px 0 10px;border-bottom:2px dashed #000;padding-bottom:6px;}
-  .print-justif-item{font-size:12px;margin-bottom:10px;text-align:justify;line-height:1.5;}
-  .print-justif-item strong{color:var(--green);}
-  .print-footer{text-align:center;font-size:11px;margin-top:auto;border-top:2px solid var(--green);padding-top:6px;}
-  .print-footer em{font-family:'Times New Roman',Times,serif;font-weight:700;font-style:italic;}
-  .print-page-num{position:absolute;bottom:6mm;right:8mm;border:1.5px solid #000;border-radius:8px;padding:3px 10px;font-weight:700;font-size:11px;background:white;}
+  .print-contact{font-size:10px;color:#444;font-style:italic;text-align:right;}
+  .print-title-box{border:2px solid var(--green);border-radius:10px;padding:12px 14px;text-align:center;margin-bottom:14px;background:#fafffe;}
+  .print-title-box h1{margin:0;font-size:18px;text-transform:uppercase;font-weight:800;font-family:'Plus Jakarta Sans';color:var(--ink-900);}
+  .print-candidate{border:1.5px solid var(--ink-300);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:700;text-align:center;background:var(--ink-50);}
+  .print-candidate span{color:var(--ink-900);font-size:14px;}
+  .print-question{page-break-inside:avoid;break-inside:avoid;margin-bottom:14px;border:1.5px solid var(--ink-200);border-radius:10px;padding:14px 16px;background:white;}
+  .print-question.is-correct{border-left:5px solid var(--green);}
+  .print-question.is-wrong{border-left:5px solid var(--red);}
+  .print-q-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+  .print-q-num{flex-shrink:0;width:26px;height:26px;border-radius:7px;background:var(--ink-900);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;font-family:'Plus Jakarta Sans';margin-top:1px;}
+  .print-q-num.ok{background:var(--green);}
+  .print-q-num.no{background:var(--red);}
+  .print-q-text{font-weight:700;font-size:14px;line-height:1.5;color:#000;flex:1;margin:0;}
+  .print-opts{display:grid;gap:5px;margin:8px 0;}
+  .print-opt{display:flex;gap:8px;align-items:flex-start;padding:7px 10px;border-radius:7px;font-size:13px;line-height:1.4;border:1px solid transparent;}
+  .print-opt .letter{font-weight:800;min-width:18px;font-family:'Plus Jakarta Sans';}
+  .print-opt .optbody{flex:1;}
+  .print-opt .mark{margin-left:auto;font-weight:800;font-size:12px;white-space:nowrap;}
+  .print-opt.is-correct{background:#e6f7ed;border-color:var(--green);color:#006633;font-weight:600;}
+  .print-opt.is-correct .mark{color:var(--green);}
+  .print-opt.is-wrong-pick{background:#fdeaea;border-color:var(--red);color:var(--red);font-weight:600;}
+  .print-opt.is-wrong-pick .mark{color:var(--red);}
+  .print-justif{margin-top:10px;background:#f0f7ff;border-left:4px solid #2980b9;border-radius:7px;padding:10px 12px;font-size:12.5px;color:#000;line-height:1.55;}
+  .print-justif strong{color:#1a5a82;}
 }
 
 @media (max-width:640px){
@@ -652,61 +659,36 @@ function buildPrintDocument(name){
   const total = QUESTIONS.length;
   const printRoot = document.getElementById('print-root');
   let html = '';
-  const FOOTER = 'AVEC Alfa fisc, VISEZ L\\'EXCELLENCE';
+  html += '<div class="print-doc">';
 
-  // Page 1: Questions
-  html += '<div class="print-page"><div class="print-main-border">';
-  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">Alfa</span> <span class="fisc">fisc</span> — POUR LES DÉBUTANTS</span><span class="print-contact">Facebook: Alfa fisc POUR LES DÉBUTANTS · WhatsApp: +226 66 47 70 70</span></div>';
+  // Header block (appears once at top of first page)
+  html += '<div class="print-brand-bar"><span class="print-brand"><span class="alfa">Alfa</span> <span class="fisc">fisc</span> — POUR LES DÉBUTANTS</span><span class="print-contact">Facebook: Alfa fisc POUR LES DÉBUTANTS · WhatsApp: +226 66 47 70 70</span></div>';
   html += '<div class="print-title-box"><h1>${escJs(examTitle)}</h1></div>';
   html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span> · Score: <span>'+score+' / '+total+'</span></div>';
-  html += '<div class="print-content">';
+
+  // Each question as a self-contained block that won't split across pages
   QUESTIONS.forEach((q,i)=>{
-    html += '<div class="print-q">';
-    html += '<span class="print-q-text">'+(i+1)+'. '+q.question+'</span>';
+    const u = answers[i] || [];
+    const ok = arraysEqual(u, q.answer);
+    html += '<div class="print-question'+(ok?' is-correct':' is-wrong')+'">';
+    html += '<div class="print-q-head"><span class="print-q-num'+(ok?' ok':' no')+'">'+(i+1)+'</span><p class="print-q-text">'+q.question+'</p></div>';
+    html += '<div class="print-opts">';
     q.options.forEach(opt=>{
-      html += '<span class="print-opt">'+opt.letter+'. '+opt.text+'</span>';
+      const isAns = q.answer.indexOf(opt.letter) !== -1;
+      const isUser = u.indexOf(opt.letter) !== -1;
+      let cls = '', mark = '';
+      if(isAns){ cls=' is-correct'; mark='BONNE'; }
+      else if(isUser && !isAns){ cls=' is-wrong-pick'; mark='VOTRE RÉPONSE'; }
+      html += '<div class="print-opt'+cls+'"><span class="letter">'+opt.letter+'.</span><span class="optbody">'+opt.text+'</span>'+(mark?'<span class="mark">'+mark+'</span>':'')+'</div>';
     });
     html += '</div>';
+    if(SHOW_JUST){
+      html += '<div class="print-justif"><strong>Justification:</strong> '+q.justification+'</div>';
+    }
+    html += '</div>';
   });
+
   html += '</div>';
-  html += '<div class="print-footer"><em>'+FOOTER+'</em></div>';
-  html += '<div class="print-page-num">Page 1 / 3</div>';
-  html += '</div></div>';
-
-  // Page 2: Answer table
-  html += '<div class="print-page"><div class="print-main-border">';
-  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">Alfa</span> <span class="fisc">fisc</span> — POUR LES DÉBUTANTS</span><span class="print-contact">WhatsApp: +226 66 47 70 70</span></div>';
-  html += '<div class="print-title-box"><h1>RÉPONSES — ${escJs(examTitle)}</h1></div>';
-  html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span></div>';
-  for(let i=0;i<QUESTIONS.length;i+=10){
-    const chunk = QUESTIONS.slice(i, i+10);
-    html += '<table class="print-corr-table"><tr class="print-row-num">';
-    chunk.forEach((q,ci)=> html += '<td>Q'+(i+ci+1)+'</td>');
-    html += '</tr><tr class="print-row-ans">';
-    chunk.forEach((q,ci)=>{
-      const uAns = answers[i+ci] || [];
-      const ok = arraysEqual(uAns, q.answer);
-      html += '<td class="'+(ok?'correct':'')+'">'+q.answer.join(',')+'</td>';
-    });
-    html += '</tr></table>';
-  }
-  html += '<div class="print-footer"><em>'+FOOTER+'</em></div>';
-  html += '<div class="print-page-num">Page 2 / 3</div>';
-  html += '</div></div>';
-
-  // Page 3: Justifications
-  html += '<div class="print-page"><div class="print-main-border">';
-  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">Alfa</span> <span class="fisc">fisc</span> — POUR LES DÉBUTANTS</span><span class="print-contact">WhatsApp: +226 66 47 70 70</span></div>';
-  html += '<div class="print-title-box"><h1>EXPLICATIONS — ${escJs(examTitle)}</h1></div>';
-  html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span></div>';
-  html += '<div class="print-justif-title">Justifications et Explications</div>';
-  QUESTIONS.forEach((q,i)=>{
-    html += '<div class="print-justif-item"><strong>Q'+(i+1)+' :</strong> '+q.justification+'</div>';
-  });
-  html += '<div class="print-footer"><em>'+FOOTER+'</em></div>';
-  html += '<div class="print-page-num">Page 3 / 3</div>';
-  html += '</div></div>';
-
   printRoot.innerHTML = html;
   if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([printRoot]);
 }
