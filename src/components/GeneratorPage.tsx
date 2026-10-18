@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   FileEdit, Eye, Download, Sparkles, ClipboardPaste, Trash2,
-  AlertTriangle, CheckCircle2, ChevronDown, Settings2, Printer, Play, Shuffle,
+  AlertTriangle, CheckCircle2, ChevronDown, Settings2, Printer, Play, Shuffle, Timer,
 } from 'lucide-react';
 import { parseQCMText, SAMPLE_QCM, type ParseResult, type QCM } from '@/lib/qcm';
 import { generateExamHtml, type GenerateOptions } from '@/lib/generateExam';
@@ -15,12 +15,13 @@ export default function GeneratorPage() {
   const [showJustification, setShowJustification] = useState(true);
   const [shuffleQuestions, setShuffleQuestions] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
+  const [durationMin, setDurationMin] = useState(0);
   const [result, setResult] = useState<ParseResult | null>(null);
 
   const parsed = useMemo(() => (text.trim() ? parseQCMText(text) : null), [text]);
   const questions: QCM[] = result?.questions ?? parsed?.questions ?? [];
 
-  const buildOptions = (): GenerateOptions => ({ mode, showJustification, shuffleQuestions, shuffleOptions });
+  const buildOptions = (): GenerateOptions => ({ mode, showJustification, shuffleQuestions, shuffleOptions, durationMin });
 
   const handleParse = () => {
     const res = parseQCMText(text);
@@ -264,6 +265,33 @@ Justification : [Explication ou base juridique]
               <span className="text-sm font-semibold text-ink-700">Afficher les justifications</span>
               <Toggle on={showJustification} onClick={() => setShowJustification((s) => !s)} />
             </label>
+
+            {/* Timer */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-ink-500 mb-2">
+                Durée impartie (minutes)
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <Timer className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="number"
+                    min={0}
+                    max={600}
+                    value={durationMin}
+                    onChange={(e) => setDurationMin(Math.max(0, Math.min(600, parseInt(e.target.value, 10) || 0)))}
+                    className="input-field pl-9 font-semibold"
+                    placeholder="0 = sans limite"
+                  />
+                </div>
+                <span className="text-xs text-ink-400 whitespace-nowrap">min</span>
+              </div>
+              <p className="mt-2 text-xs text-ink-400 leading-relaxed">
+                {durationMin > 0
+                  ? `Le candidat aura ${durationMin} minute${durationMin > 1 ? 's' : ''} pour terminer. Le test se clot automatiquement à la fin du chrono.`
+                  : 'Aucune limite de temps. Mettez 0 pour un test sans chrono.'}
+              </p>
+            </div>
 
             {/* Shuffle toggles */}
             <div className="pt-4 border-t border-ink-100">

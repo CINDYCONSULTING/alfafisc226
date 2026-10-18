@@ -22,6 +22,7 @@ export interface GenerateOptions {
   showJustification: boolean;
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
+  durationMin: number;
 }
 
 export function generateExamHtml(title: string, questions: QCM[], options: GenerateOptions): string {
@@ -48,15 +49,19 @@ export function generateExamHtml(title: string, questions: QCM[], options: Gener
 <style>
 :root{--red:#EF2B2D;--green:#009E49;--orange:#F4791F;--ink-900:#0e131f;--ink-800:#1a2030;--ink-700:#2a3140;--ink-600:#3f4757;--ink-500:#5f6878;--ink-400:#8a93a5;--ink-300:#b6bdca;--ink-200:#d9dde5;--ink-100:#eef0f4;--ink-50:#f7f8fa;}
 *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#ffffff;margin:0;color:#000;line-height:1.6;}
-.app{max-width:880px;margin:0 auto;min-height:100vh;background:white;box-shadow:0 0 40px rgba(0,0,0,0.05);}
+body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#f5f4ef;margin:0;color:#000;line-height:1.6;}
+.app{max-width:880px;margin:0 auto;min-height:100vh;background:#f5f4ef;box-shadow:0 0 40px rgba(0,0,0,0.05);}
+
+/* Water ripple effect on click */
+.ripple{position:absolute;border-radius:50%;background:rgba(0,158,73,0.18);transform:scale(0);animation:rippleAnim 0.6s ease-out;pointer-events:none;z-index:999;}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0;}}
 
 /* Page borders — single color, rounded top & bottom */
 .page-border-top{height:10px;background:linear-gradient(90deg,var(--green) 0%,var(--green) 50%,var(--red) 50%,var(--red) 100%);border-radius:12px 12px 0 0;}
 .page-border-bottom{height:10px;background:linear-gradient(90deg,var(--green) 0%,var(--green) 50%,var(--red) 50%,var(--red) 100%);border-radius:0 0 12px 12px;}
 
 /* Header */
-.exam-header{background:white;padding:24px 24px 20px;}
+.exam-header{background:#f5f4ef;padding:24px 24px 20px;}
 .exam-brand-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 .brand-block{display:flex;align-items:center;gap:14px;}
 .brand-logo{width:48px;height:48px;border-radius:12px;background:var(--ink-900);display:grid;place-items:center;}
@@ -67,17 +72,21 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#ffffff;m
 .brand-tag{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-400);font-weight:600;margin-top:4px;}
 .contact-info{font-size:11px;color:var(--ink-400);text-align:right;line-height:1.5;}
 .contact-info strong{color:var(--ink-600);}
-.exam-title-box{margin-top:18px;padding:16px 20px;border:2px solid var(--ink-200);border-radius:14px;text-align:center;background:var(--ink-50);}
-.exam-title-box h1{font-family:'Plus Jakarta Sans';font-size:20px;font-weight:800;color:var(--ink-900);margin:0;letter-spacing:-0.01em;}
+.exam-title-box{margin-top:18px;padding:18px 22px;border:3px solid #000;border-radius:14px;text-align:center;background:#f9f9f9;box-shadow:5px 5px 0 #000;}
+.exam-title-box h1{font-family:'Plus Jakarta Sans';font-size:21px;font-weight:800;color:#000;margin:0;letter-spacing:-0.01em;text-transform:uppercase;}
 .exam-meta{margin-top:12px;display:flex;gap:18px;font-size:12px;color:var(--ink-400);flex-wrap:wrap;justify-content:center;}
 .exam-meta b{color:var(--ink-600);font-weight:700;}
 
 /* Toolbar */
-.toolbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--ink-100);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.toolbar{position:sticky;top:0;z-index:50;background:rgba(245,244,239,0.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--ink-100);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .progress-wrap{flex:1;display:flex;align-items:center;gap:14px;min-width:0;}
 .progress-bar{flex:1;height:8px;background:var(--ink-100);border-radius:99px;overflow:hidden;}
 .progress-fill{height:100%;background:var(--green);border-radius:99px;transition:width 0.5s ease;}
 .progress-label{font-size:13px;font-weight:700;color:var(--ink-700);white-space:nowrap;}
+.timer-label{font-size:14px;font-weight:800;color:var(--ink-700);white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.timer-label.timer-warn{color:var(--orange);animation:timerPulse 1s ease-in-out infinite;}
+.timer-label.timer-danger{color:var(--red);animation:timerPulse 0.5s ease-in-out infinite;}
+@keyframes timerPulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-family:'Inter';font-weight:700;font-size:14px;padding:11px 20px;border-radius:12px;transition:all 0.15s;}
@@ -91,12 +100,15 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#ffffff;m
 .btn-red:active{transform:translateY(4px);box-shadow:0 1px 0 #b82325;}
 .btn-ghost{background:var(--ink-50);color:var(--ink-600);border:1px solid var(--ink-200);}
 .btn-ghost:hover{background:var(--ink-100);}
+.btn-orange{background:var(--orange);color:#fff;box-shadow:0 5px 0 #c66215,0 7px 16px rgba(244,121,31,0.3);}
+.btn-orange:hover{filter:brightness(1.06);}
+.btn-orange:active{transform:translateY(4px);box-shadow:0 1px 0 #c66215,0 2px 6px rgba(244,121,31,0.3);}
 .btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
 .btn-sm{padding:8px 14px;font-size:13px;border-radius:10px;}
 
 /* Question card */
 .content{padding:28px 24px 48px;}
-.q-card{background:white;border:1px solid var(--ink-100);border-radius:18px;padding:28px;box-shadow:0 6px 20px -8px rgba(26,32,48,0.1);animation:fadeIn 0.4s ease both;}
+.q-card{background:#fefdfb;border:1px solid var(--ink-100);border-radius:18px;padding:28px;box-shadow:0 6px 20px -8px rgba(26,32,48,0.1);animation:fadeIn 0.4s ease both;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 @keyframes slideDown{from{opacity:0;max-height:0;}to{opacity:1;max-height:700px;}}
 @keyframes popIn{0%{opacity:0;transform:scale(0.6);}70%{transform:scale(1.06);}100%{opacity:1;transform:scale(1);}}
@@ -107,18 +119,18 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#ffffff;m
 .multi-hint{font-size:12px;color:var(--orange);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
 .q-text{font-family:'Plus Jakarta Sans';font-size:19px;font-weight:800;color:#000;line-height:1.5;margin:0 0 22px;}
 .options{display:grid;gap:12px;}
-.opt{display:flex;align-items:flex-start;gap:14px;width:100%;text-align:left;background:white;border:2px solid var(--ink-200);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all 0.2s;font:inherit;color:inherit;}
-.opt:hover:not(:disabled){border-color:var(--ink-400);transform:translateY(-1px);box-shadow:0 4px 12px -4px rgba(0,0,0,0.1);}
+.opt{display:flex;align-items:flex-start;gap:14px;width:100%;text-align:left;background:#fefdfb;border:1.5px solid #000;border-radius:14px;padding:16px 18px;cursor:pointer;transition:all 0.2s;font:inherit;color:inherit;}
+.opt:hover:not(:disabled){border-color:var(--ink-600);transform:translateY(-1px);box-shadow:0 4px 12px -4px rgba(0,0,0,0.1);}
 .opt:disabled{cursor:default;}
-.opt-check{flex-shrink:0;width:24px;height:24px;border-radius:6px;border:2px solid var(--ink-300);background:white;display:grid;place-items:center;margin-top:2px;transition:all 0.2s;}
+.opt-check{flex-shrink:0;width:24px;height:24px;border-radius:6px;border:1.5px solid #000;background:#fefdfb;display:grid;place-items:center;margin-top:2px;transition:all 0.2s;}
 .opt.is-selected .opt-check{background:var(--green);border-color:var(--green);}
 .opt-check svg{width:15px;height:15px;color:#fff;opacity:0;transition:opacity 0.15s;}
 .opt.is-selected .opt-check svg{opacity:1;}
 .opt-letter{flex-shrink:0;width:36px;height:36px;border-radius:10px;background:var(--ink-50);color:var(--ink-600);font-family:'Plus Jakarta Sans';font-weight:800;font-size:14px;display:grid;place-items:center;transition:all 0.2s;}
 .opt-text{flex:1;padding-top:5px;font-size:16px;color:#000;font-weight:400;}
-.opt.is-correct{border-color:var(--green);background:#e6f7ed;}
+.opt.is-correct{border:2px solid var(--green);background:#e6f7ed;}
 .opt.is-correct .opt-letter{background:var(--green);color:#fff;}
-.opt.is-wrong{border-color:var(--red);background:#fdeaea;}
+.opt.is-wrong{border:2px solid var(--red);background:#fdeaea;}
 .opt.is-wrong .opt-letter{background:var(--red);color:#fff;}
 .opt-mark{margin-left:auto;padding-top:6px;font-weight:800;font-size:18px;}
 .opt.is-correct .opt-mark{color:var(--green);}
@@ -191,7 +203,7 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#ffffff;m
 
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(14,19,31,0.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;animation:fadeIn 0.2s ease;}
-.modal{background:white;border-radius:20px;padding:32px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;}
+.modal{background:#fefdfb;border-radius:20px;padding:32px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;}
 .modal h3{font-family:'Plus Jakarta Sans';font-size:20px;font-weight:800;color:var(--ink-900);margin:0 0 8px;text-align:center;}
 .modal p{font-size:14px;color:var(--ink-500);text-align:center;margin:0 0 20px;}
 .modal input{width:100%;padding:13px 16px;border:2px solid var(--ink-200);border-radius:12px;font-size:15px;font-weight:600;color:var(--ink-900);outline:none;transition:border-color 0.2s;margin-bottom:16px;}
@@ -283,6 +295,7 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#ffffff;m
       <span class="progress-label" id="progressLabel">Question 1 / ${questions.length}</span>
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     </div>
+    <span class="timer-label" id="timerLabel" style="display:none;"></span>
   </div>
 
   <main class="content">
@@ -307,6 +320,10 @@ const MODE = '${options.mode}';
 const SHOW_JUST = ${options.showJustification};
 const SHUFFLE_Q = ${options.shuffleQuestions};
 const SHUFFLE_O = ${options.shuffleOptions};
+const DURATION_MIN = ${options.durationMin};
+
+let timerInterval = null;
+let timeLeft = 0;
 
 let QUESTIONS = [];
 let current = 0;
@@ -330,6 +347,7 @@ function startExam(){
   current = 0;
   answers = new Array(QUESTIONS.length).fill(null).map(()=>[]);
   validated = new Array(QUESTIONS.length).fill(false);
+  startTimer();
   render();
 }
 
@@ -337,6 +355,40 @@ const quizEl = document.getElementById('quiz');
 const dotsEl = document.getElementById('dots');
 const progressFill = document.getElementById('progressFill');
 const progressLabel = document.getElementById('progressLabel');
+const timerLabel = document.getElementById('timerLabel');
+
+function startTimer(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
+  if(DURATION_MIN > 0){
+    timeLeft = DURATION_MIN * 60;
+    timerLabel.style.display = 'flex';
+    updateTimerDisplay();
+    timerInterval = setInterval(()=>{
+      timeLeft--;
+      if(timeLeft <= 0){
+        clearInterval(timerInterval); timerInterval=null;
+        timeLeft = 0;
+        updateTimerDisplay();
+        finishExam();
+        render();
+        return;
+      }
+      updateTimerDisplay();
+    }, 1000);
+  } else {
+    timerLabel.style.display = 'none';
+  }
+}
+
+function updateTimerDisplay(){
+  if(DURATION_MIN <= 0) return;
+  const m = Math.floor(timeLeft/60);
+  const s = timeLeft%60;
+  timerLabel.textContent = '⏱ ' + m + ':' + (s<10?'0':'') + s;
+  timerLabel.classList.remove('timer-warn','timer-danger');
+  if(timeLeft <= 30) timerLabel.classList.add('timer-danger');
+  else if(timeLeft <= 60) timerLabel.classList.add('timer-warn');
+}
 
 function arraysEqual(a,b){
   if(!a||!b) return false;
@@ -511,7 +563,7 @@ function renderResults(){
   if(missed > 0){
     html += '<button class="btn btn-red btn-sm" onclick="retryMissed()">Reprendre les ratées ('+missed+')</button>';
   }
-  html += '<button class="btn btn-ghost btn-sm" onclick="restartAll()">Tout reprendre</button>';
+  html += '<button class="btn btn-orange btn-sm" onclick="restartAll()">Tout reprendre</button>';
   html += '</div>';
 
   html += '<div id="correction-review"></div>';
@@ -660,6 +712,23 @@ function buildPrintDocument(name){
 }
 
 function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* Water ripple effect on click */
+document.addEventListener('click', function(e){
+  const target = e.target.closest('.opt, .btn, .btn-next, .btn-prev, .dot');
+  if(!target) return;
+  const rect = target.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  const size = Math.max(rect.width, rect.height);
+  ripple.style.width = ripple.style.height = size + 'px';
+  ripple.style.left = (e.clientX - rect.left - size/2) + 'px';
+  ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
+  if(getComputedStyle(target).position === 'static') target.style.position = 'relative';
+  target.style.overflow = 'hidden';
+  target.appendChild(ripple);
+  setTimeout(()=>{ if(ripple.parentNode) ripple.parentNode.removeChild(ripple); }, 600);
+});
 
 startExam();
 </script>
