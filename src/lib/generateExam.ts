@@ -217,11 +217,14 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#f5f4ef;m
   body *{visibility:hidden;}
   #print-root,#print-root *{visibility:visible;}
   #print-root{display:block;position:absolute;left:0;top:0;width:100%;background:white;}
-  @page{size:A4;margin:16mm 15mm 18mm 15mm;
+  @page{size:A4;margin:14mm 14mm 16mm 14mm;
     @bottom-right{content:"Page " counter(page) " / " counter(pages);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;color:#000;}
     @bottom-center{content:"Alfa fisc — Avec Alfa fisc, visez l'excellence";font-family:'Times New Roman',serif;font-style:italic;font-size:9px;color:#777;}
   }
-  .print-doc{width:100%;background:white;}
+  .print-table{width:100%;border-collapse:collapse;}
+  .print-table thead{display:table-header-group;}
+  .print-table tbody{display:table-row-group;}
+  .print-table > tbody > tr > td{padding:0;vertical-align:top;}
   .print-brand-bar{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--green);padding-bottom:8px;margin-bottom:14px;font-size:11px;font-weight:700;}
   .print-brand{font-family:'Times New Roman',Times,serif;font-style:italic;font-size:16px;font-weight:700;}
   .print-brand .alfa{color:var(--green);}
@@ -232,6 +235,7 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#f5f4ef;m
   .print-candidate{border:1.5px solid var(--ink-300);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:700;text-align:center;background:var(--ink-50);}
   .print-candidate span{color:var(--ink-900);font-size:14px;}
   .print-question{page-break-inside:avoid;break-inside:avoid;margin-bottom:14px;border:1.5px solid var(--ink-200);border-radius:10px;padding:14px 16px;background:white;}
+  .print-question:last-child{margin-bottom:0;}
   .print-question.is-correct{border-left:5px solid var(--green);}
   .print-question.is-wrong{border-left:5px solid var(--red);}
   .print-q-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
@@ -658,38 +662,44 @@ function buildPrintDocument(name){
   const score = getScore();
   const total = QUESTIONS.length;
   const printRoot = document.getElementById('print-root');
-  let html = '';
-  html += '<div class="print-doc">';
 
-  // Header block (appears once at top of first page)
-  html += '<div class="print-brand-bar"><span class="print-brand"><span class="alfa">Alfa</span> <span class="fisc">fisc</span> — POUR LES DÉBUTANTS</span><span class="print-contact">Facebook: Alfa fisc POUR LES DÉBUTANTS · WhatsApp: +226 66 47 70 70</span></div>';
-  html += '<div class="print-title-box"><h1>${escJs(examTitle)}</h1></div>';
-  html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span> · Score: <span>'+score+' / '+total+'</span></div>';
+  // Use a table so the <thead> (Alfa fisc header) repeats on every printed page.
+  // A single <tbody><tr><td> wraps all questions so the browser flows content
+  // across A4 pages automatically — no fixed-height page divs, no blank pages.
+  let body = '';
+
+  // First-page intro block (title + candidate) sits inside the body cell
+  body += '<div class="print-title-box"><h1>${escJs(examTitle)}</h1></div>';
+  body += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span> · Score: <span>'+score+' / '+total+'</span></div>';
 
   // Each question as a self-contained block that won't split across pages
   QUESTIONS.forEach((q,i)=>{
     const u = answers[i] || [];
     const ok = arraysEqual(u, q.answer);
-    html += '<div class="print-question'+(ok?' is-correct':' is-wrong')+'">';
-    html += '<div class="print-q-head"><span class="print-q-num'+(ok?' ok':' no')+'">'+(i+1)+'</span><p class="print-q-text">'+q.question+'</p></div>';
-    html += '<div class="print-opts">';
+    body += '<div class="print-question'+(ok?' is-correct':' is-wrong')+'">';
+    body += '<div class="print-q-head"><span class="print-q-num'+(ok?' ok':' no')+'">'+(i+1)+'</span><p class="print-q-text">'+q.question+'</p></div>';
+    body += '<div class="print-opts">';
     q.options.forEach(opt=>{
       const isAns = q.answer.indexOf(opt.letter) !== -1;
       const isUser = u.indexOf(opt.letter) !== -1;
       let cls = '', mark = '';
       if(isAns){ cls=' is-correct'; mark='BONNE'; }
       else if(isUser && !isAns){ cls=' is-wrong-pick'; mark='VOTRE RÉPONSE'; }
-      html += '<div class="print-opt'+cls+'"><span class="letter">'+opt.letter+'.</span><span class="optbody">'+opt.text+'</span>'+(mark?'<span class="mark">'+mark+'</span>':'')+'</div>';
+      body += '<div class="print-opt'+cls+'"><span class="letter">'+opt.letter+'.</span><span class="optbody">'+opt.text+'</span>'+(mark?'<span class="mark">'+mark+'</span>':'')+'</div>';
     });
-    html += '</div>';
+    body += '</div>';
     if(SHOW_JUST){
-      html += '<div class="print-justif"><strong>Justification:</strong> '+q.justification+'</div>';
+      body += '<div class="print-justif"><strong>Justification:</strong> '+q.justification+'</div>';
     }
-    html += '</div>';
+    body += '</div>';
   });
 
-  html += '</div>';
-  printRoot.innerHTML = html;
+  const headerRow =
+    '<thead><tr><td>'+
+    '<div class="print-brand-bar"><span class="print-brand"><span class="alfa">Alfa</span> <span class="fisc">fisc</span> — POUR LES DÉBUTANTS</span><span class="print-contact">Facebook: Alfa fisc POUR LES DÉBUTANTS · WhatsApp: +226 66 47 70 70</span></div>'+
+    '</td></tr></thead>';
+
+  printRoot.innerHTML = '<table class="print-table">'+headerRow+'<tbody><tr><td>'+body+'</td></tr></tbody></table>';
   if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([printRoot]);
 }
 
