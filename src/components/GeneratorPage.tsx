@@ -71,14 +71,13 @@ export default function GeneratorPage() {
     setResult(null);
   };
 
+  const errorCount = result?.errors.length ?? parsed?.errors.length ?? 0;
+  const hasQuestions = questions.length > 0;
   const canDownload = hasQuestions && fileName.trim().length > 0;
 
   const pasteFromClipboard = () => {
     navigator.clipboard?.readText().then((t) => { setText(t); setResult(null); }).catch(() => {});
   };
-
-  const errorCount = result?.errors.length ?? parsed?.errors.length ?? 0;
-  const hasQuestions = questions.length > 0;
 
   return (
     <div className="container-page py-8 sm:py-12">
