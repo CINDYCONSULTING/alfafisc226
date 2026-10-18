@@ -47,7 +47,7 @@ export function generateExamHtml(title: string, questions: QCM[], options: Gener
 <style>
 :root{--red:#EF2B2D;--green:#009E49;--ink-900:#0e131f;--ink-800:#1a2030;--ink-700:#2a3140;--ink-600:#3f4757;--ink-500:#5f6878;--ink-400:#8a93a5;--ink-300:#b6bdca;--ink-200:#d9dde5;--ink-100:#eef0f4;--ink-50:#f7f8fa;}
 *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink-50);margin:0;color:var(--ink-700);line-height:1.6;}
+body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink-50);margin:0;color:#000;line-height:1.6;}
 .app{max-width:880px;margin:0 auto;min-height:100vh;background:white;box-shadow:0 0 40px rgba(0,0,0,0.05);}
 
 /* Page borders — single color, rounded top & bottom */
@@ -103,13 +103,13 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink
 .q-chip.idle{background:var(--ink-50);color:var(--ink-500);}
 .q-chip.correct{background:#e6f7ed;color:var(--green);}
 .q-chip.wrong{background:#fdeaea;color:var(--red);}
-.q-text{font-family:'Plus Jakarta Sans';font-size:19px;font-weight:700;color:var(--ink-900);line-height:1.5;margin:0 0 22px;}
+.q-text{font-family:'Plus Jakarta Sans';font-size:19px;font-weight:800;color:#000;line-height:1.5;margin:0 0 22px;}
 .options{display:grid;gap:12px;}
 .opt{display:flex;align-items:flex-start;gap:14px;width:100%;text-align:left;background:white;border:2px solid var(--ink-200);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all 0.2s;font:inherit;color:inherit;}
 .opt:hover:not(:disabled){border-color:var(--ink-400);transform:translateY(-1px);box-shadow:0 4px 12px -4px rgba(0,0,0,0.1);}
 .opt:disabled{cursor:default;}
 .opt-letter{flex-shrink:0;width:36px;height:36px;border-radius:10px;background:var(--ink-50);color:var(--ink-600);font-family:'Plus Jakarta Sans';font-weight:800;font-size:14px;display:grid;place-items:center;transition:all 0.2s;}
-.opt-text{flex:1;padding-top:5px;font-size:16px;color:var(--ink-700);font-weight:500;}
+.opt-text{flex:1;padding-top:5px;font-size:16px;color:#000;font-weight:400;}
 .opt.is-correct{border-color:var(--green);background:#e6f7ed;}
 .opt.is-correct .opt-letter{background:var(--green);color:#fff;}
 .opt.is-wrong{border-color:var(--red);background:#fdeaea;}
@@ -125,7 +125,7 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink
 .justif-badge.correct{background:#c8efd8;color:var(--green);}
 .justif-badge.wrong{background:#fbd5d5;color:var(--red);}
 .justif-title{font-family:'Plus Jakarta Sans';font-weight:800;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#1a5a82;}
-.justif-body{font-size:15px;color:var(--ink-600);line-height:1.7;margin:0;}
+.justif-body{font-size:15px;color:#000;line-height:1.7;margin:0;}
 
 /* Nav */
 .q-nav{margin-top:22px;display:flex;justify-content:flex-end;}
@@ -560,7 +560,7 @@ function buildPrintDocument(name){
     html += '</div>';
   });
   html += '</div>';
-  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\'EXCELLENCE</em></div>';
+  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\\'EXCELLENCE</em></div>';
   html += '<div class="print-page-num">Page 1 / 3</div>';
   html += '</div></div>';
 
@@ -582,7 +582,7 @@ function buildPrintDocument(name){
     });
     html += '</tr></table>';
   }
-  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\'EXCELLENCE</em></div>';
+  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\\'EXCELLENCE</em></div>';
   html += '<div class="print-page-num">Page 2 / 3</div>';
   html += '</div></div>';
 
@@ -595,7 +595,7 @@ function buildPrintDocument(name){
   QUESTIONS.forEach((q,i)=>{
     html += '<div class="print-justif-item"><strong>Q'+(i+1)+' :</strong> '+q.justification+'</div>';
   });
-  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\'EXCELLENCE</em></div>';
+  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\\'EXCELLENCE</em></div>';
   html += '<div class="print-page-num">Page 3 / 3</div>';
   html += '</div></div>';
 
