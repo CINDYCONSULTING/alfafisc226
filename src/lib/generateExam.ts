@@ -45,7 +45,7 @@ export function generateExamHtml(title: string, questions: QCM[], options: Gener
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <script>window.MathJax={tex:{inlineMath:[['
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <style>
 :root{--red:#EF2B2D;--green:#009E49;--orange:#F4791F;--ink-900:#0e131f;--ink-800:#1a2030;--ink-700:#2a3140;--ink-600:#3f4757;--ink-500:#5f6878;--ink-400:#8a93a5;--ink-300:#b6bdca;--ink-200:#d9dde5;--ink-100:#eef0f4;--ink-50:#f7f8fa;}
 *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
