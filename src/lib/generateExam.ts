@@ -44,7 +44,7 @@ export function generateExamHtml(title: string, questions: QCM[], options: Gener
 <title>${esc(examTitle)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\\\(','\\\\)']]},svg:{fontCache:'global'}};</script>
+<script>window.MathJax={tex:{inlineMath:[['
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <style>
 :root{--red:#EF2B2D;--green:#009E49;--orange:#F4791F;--ink-900:#0e131f;--ink-800:#1a2030;--ink-700:#2a3140;--ink-600:#3f4757;--ink-500:#5f6878;--ink-400:#8a93a5;--ink-300:#b6bdca;--ink-200:#d9dde5;--ink-100:#eef0f4;--ink-50:#f7f8fa;}
@@ -344,6 +344,21 @@ let candidateName = '';
 
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
+let _mjReady = null;
+function mathJaxReady(){
+  if(window.MathJax && MathJax.typesetPromise) return Promise.resolve();
+  if(_mjReady) return _mjReady;
+  _mjReady = new Promise(function(resolve){
+    var check = function(){ if(window.MathJax && MathJax.typesetPromise){ resolve(); return; } setTimeout(check, 80); };
+    check();
+  });
+  return _mjReady;
+}
+function typesetMath(el){
+  if(!el) return Promise.resolve();
+  return mathJaxReady().then(function(){ if(window.MathJax && MathJax.typesetPromise) return MathJax.typesetPromise([el]); }).catch(function(){});
+}
+
 function initQuestions(){
   let qs = RAW_QUESTIONS.map(q=>{
     const opts = SHUFFLE_O ? shuffle(q.options) : [...q.options];
@@ -480,7 +495,7 @@ function render(){
   html += '</div>';
   quizEl.innerHTML = html;
   renderDots();
-  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([quizEl]);
+  typesetMath(quizEl);
 }
 
 function toggleAnswer(letter){
@@ -577,7 +592,7 @@ function renderResults(){
   html += '</div>';
   quizEl.innerHTML = html;
   dotsEl.innerHTML = '';
-  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([quizEl]);
+  typesetMath(quizEl);
 }
 
 function showCorrectionReview(){
@@ -607,7 +622,7 @@ function showCorrectionReview(){
   html += '</div>';
   el.innerHTML = html;
   el.scrollIntoView({behavior:'smooth', block:'start'});
-  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([el]);
+  typesetMath(el);
 }
 
 function retryMissed(){
@@ -650,8 +665,7 @@ function confirmDownloadPdf(){
   if(!name){ if(inp){ inp.style.borderColor='var(--red)'; inp.focus(); } return; }
   candidateName = name;
   closeModal();
-  buildPrintDocument(name);
-  setTimeout(()=>{ window.print(); }, 350);
+  Promise.resolve(buildPrintDocument(name)).then(function(){ window.print(); });
 }
 
 function buildPrintDocument(name){
@@ -696,7 +710,7 @@ function buildPrintDocument(name){
     '</td></tr></thead>';
 
   printRoot.innerHTML = '<table class="print-table">'+headerRow+'<tbody><tr><td>'+body+'</td></tr></tbody></table>';
-  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([printRoot]);
+  return typesetMath(printRoot);
 }
 
 function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
