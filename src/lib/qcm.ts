@@ -8,7 +8,7 @@ export interface QCM {
   index: number;
   question: string;
   options: QCMOption[];
-  answer: string;
+  answer: string[];
   justification: string;
 }
 
@@ -26,7 +26,7 @@ export interface ParseResult {
 const QCM_HEADER = /^\s*qcm\s*(\d+)\s*[:：\-]\s*(.*)$/i;
 const NUM_QUESTION = /^\s*(\d+)\s*[\.）\)]\s*(.*)$/;
 const OPTION_LINE = /^\s*([A-Ea-e])\s*[\.）\)]\s*(.*)$/;
-const ANSWER_LINE = /^\s*(?:réponse|reponse)\s*[:：]\s*([A-Ea-e])\s*$/i;
+const ANSWER_LINE = /^\s*(?:réponse|reponse)\s*[:：]\s*([A-Ea-e](?:\s*[,，;]\s*[A-Ea-e])*)\s*$/i;
 const JUSTIF_LINE = /^\s*(?:justification|justif)\s*[:：]\s*(.*)$/i;
 const STRIP_ACCENTS = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -35,7 +35,6 @@ export function parseQCMText(raw: string): ParseResult {
   const errors: ParseError[] = [];
   const questions: QCM[] = [];
 
-  // Identify block boundaries: a new block starts at a "QCM n:" line OR a numbered question line ("1. ...")
   const blockStarts: { startIndex: number; startLine: number }[] = [];
   lines.forEach((line, i) => {
     const trimmed = line.trim();
@@ -43,7 +42,6 @@ export function parseQCMText(raw: string): ParseResult {
     if (QCM_HEADER.test(trimmed)) {
       blockStarts.push({ startIndex: i, startLine: i + 1 });
     } else if (NUM_QUESTION.test(trimmed)) {
-      // Only treat as block start if previous non-empty line isn't an option/answer/justif
       let prevIdx = i - 1;
       while (prevIdx >= 0 && lines[prevIdx].trim() === '') prevIdx--;
       const prev = prevIdx >= 0 ? lines[prevIdx].trim() : '';
@@ -72,7 +70,7 @@ export function parseQCMText(raw: string): ParseResult {
 
     let questionText = '';
     let options: QCMOption[] = [];
-    let answer: string | null = null;
+    let answer: string[] = [];
     let justification = '';
     let qcmNumber = blockIdx + 1;
 
@@ -91,16 +89,16 @@ export function parseQCMText(raw: string): ParseResult {
       if (!trimmed) continue;
 
       const optMatch = trimmed.match(OPTION_LINE);
-      const ansMatch = trimmed.match(ANSWER_LINE);
-      const justMatch = trimmed.match(JUSTIF_LINE);
       const stripped = STRIP_ACCENTS(trimmed.toLowerCase());
       const looksLikeAnswer = stripped.startsWith('reponse') || stripped.startsWith('réponse');
       const looksLikeJustif = stripped.startsWith('justification') || stripped.startsWith('justif');
 
-      if (looksLikeAnswer || ansMatch) {
-        const m = trimmed.match(/[:：]\s*([A-Ea-e])/);
-        if (m) answer = m[1].toUpperCase();
-      } else if (looksLikeJustif || justMatch) {
+      if (looksLikeAnswer) {
+        const m = trimmed.match(/[:：]\s*([A-Ea-e](?:\s*[,，;]\s*[A-Ea-e])*)/);
+        if (m) {
+          answer = m[1].split(/[,，;]/).map((x) => x.trim().toUpperCase()).filter(Boolean);
+        }
+      } else if (looksLikeJustif) {
         const m = trimmed.match(/[:：]\s*(.*)$/);
         justification = m ? m[1].trim() : trimmed.replace(/^.*?(?:justification|justif)\s*/i, '').trim();
       } else if (optMatch) {
@@ -122,13 +120,15 @@ export function parseQCMText(raw: string): ParseResult {
       errors.push({ inputLine: startLine, message: `Question ${qcmNumber}: options A/B/C/D manquantes` });
       return;
     }
-    if (!answer) {
+    if (answer.length === 0) {
       errors.push({ inputLine: startLine, message: `Question ${qcmNumber}: réponse (A/B/C/D) manquante` });
       return;
     }
-    if (!options.find((o) => o.letter === answer)) {
-      errors.push({ inputLine: startLine, message: `Question ${qcmNumber}: la réponse ${answer} n'existe pas dans les options` });
-      return;
+    for (const a of answer) {
+      if (!options.find((o) => o.letter === a)) {
+        errors.push({ inputLine: startLine, message: `Question ${qcmNumber}: la réponse ${a} n'existe pas dans les options` });
+        return;
+      }
     }
 
     questions.push({
@@ -136,7 +136,7 @@ export function parseQCMText(raw: string): ParseResult {
       index: qcmNumber,
       question: questionText,
       options: options.sort((a, b) => a.letter.localeCompare(b.letter)),
-      answer,
+      answer: answer.sort(),
       justification: justification || 'Aucune justification fournie.',
     });
   });
@@ -153,14 +153,14 @@ D. 2,1 %
 Réponse : B
 Justification : Le taux normal de TVA en France métropolitaine est fixé à 20 % depuis 2014.
 
-QCM 2 : Quelle taxe concerne les plus-values immobilières des particuliers ?
+QCM 2 : Quelles taxes concernent les plus-values immobilières des particuliers ?
 A. La CGS
 B. L'IFI
 C. L'impôt sur le revenu au barème progressif
 D. La TVA immobilière
 
-Réponse : C
-Justification : Depuis 2004, les plus-values immobilières des particuliers relèvent de l'impôt sur le revenu avec un système d'abattements pour durée de détention.
+Réponse : B, C
+Justification : Les plus-values immobilières des particuliers relèvent de l'impôt sur le revenu (C) et peuvent aussi être soumises à l'IFI (B) selon la situation.
 
 QCM 3 : À partir de quel seuil de patrimoine l'IFI est-il dû ?
 A. 800 000 €

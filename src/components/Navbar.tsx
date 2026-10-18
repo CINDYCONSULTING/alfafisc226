@@ -20,7 +20,7 @@ export default function Navbar({ route, onNavigate }: NavbarProps) {
           </div>
           <div className="flex flex-col leading-none text-left">
             <span className="brand-wordmark text-2xl">
-              <span className="alfa">ALFA</span> <span className="fisc">FISC</span>
+              <span className="alfa">Alfa</span> <span className="fisc">fisc</span>
             </span>
             <span className="text-[10px] uppercase tracking-[0.18em] text-ink-400 font-semibold mt-0.5">
               Générateur de Sujets

@@ -2,6 +2,7 @@ import type { QCM } from './qcm';
 
 const RED = '#EF2B2D';
 const GREEN = '#009E49';
+const ORANGE = '#F4791F';
 
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -24,13 +25,13 @@ export interface GenerateOptions {
 }
 
 export function generateExamHtml(title: string, questions: QCM[], options: GenerateOptions): string {
-  const examTitle = title.trim() || 'EXAMEN — ALFA FISC';
+  const examTitle = title.trim() || 'EXAMEN — Alfa fisc';
   const dataJs = questions
     .map(
       (q) =>
         `    { id:'${escJs(q.id)}', index:${q.index}, question:'${escJs(q.question)}', options:[${q.options
           .map((o) => `{letter:'${o.letter}',text:'${escJs(o.text)}'}`)
-          .join(',')}], answer:'${q.answer}', justification:'${escJs(q.justification)}' }`
+          .join(',')}], answer:[${q.answer.map((a) => `'${a}'`).join(',')}], justification:'${escJs(q.justification)}' }`
     )
     .join(',\n');
 
@@ -45,9 +46,9 @@ export function generateExamHtml(title: string, questions: QCM[], options: Gener
 <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\\\(','\\\\)']]},svg:{fontCache:'global'}};</script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <style>
-:root{--red:#EF2B2D;--green:#009E49;--ink-900:#0e131f;--ink-800:#1a2030;--ink-700:#2a3140;--ink-600:#3f4757;--ink-500:#5f6878;--ink-400:#8a93a5;--ink-300:#b6bdca;--ink-200:#d9dde5;--ink-100:#eef0f4;--ink-50:#f7f8fa;}
+:root{--red:#EF2B2D;--green:#009E49;--orange:#F4791F;--ink-900:#0e131f;--ink-800:#1a2030;--ink-700:#2a3140;--ink-600:#3f4757;--ink-500:#5f6878;--ink-400:#8a93a5;--ink-300:#b6bdca;--ink-200:#d9dde5;--ink-100:#eef0f4;--ink-50:#f7f8fa;}
 *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink-50);margin:0;color:#000;line-height:1.6;}
+body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#ffffff;margin:0;color:#000;line-height:1.6;}
 .app{max-width:880px;margin:0 auto;min-height:100vh;background:white;box-shadow:0 0 40px rgba(0,0,0,0.05);}
 
 /* Page borders — single color, rounded top & bottom */
@@ -100,14 +101,19 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink
 @keyframes slideDown{from{opacity:0;max-height:0;}to{opacity:1;max-height:700px;}}
 @keyframes popIn{0%{opacity:0;transform:scale(0.6);}70%{transform:scale(1.06);}100%{opacity:1;transform:scale(1);}}
 .q-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:99px;font-size:12px;font-weight:700;margin-bottom:14px;}
-.q-chip.idle{background:var(--ink-50);color:var(--ink-500);}
+.q-chip.idle{background:var(--orange);color:#fff;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;}
 .q-chip.correct{background:#e6f7ed;color:var(--green);}
 .q-chip.wrong{background:#fdeaea;color:var(--red);}
+.multi-hint{font-size:12px;color:var(--orange);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
 .q-text{font-family:'Plus Jakarta Sans';font-size:19px;font-weight:800;color:#000;line-height:1.5;margin:0 0 22px;}
 .options{display:grid;gap:12px;}
 .opt{display:flex;align-items:flex-start;gap:14px;width:100%;text-align:left;background:white;border:2px solid var(--ink-200);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all 0.2s;font:inherit;color:inherit;}
 .opt:hover:not(:disabled){border-color:var(--ink-400);transform:translateY(-1px);box-shadow:0 4px 12px -4px rgba(0,0,0,0.1);}
 .opt:disabled{cursor:default;}
+.opt-check{flex-shrink:0;width:24px;height:24px;border-radius:6px;border:2px solid var(--ink-300);background:white;display:grid;place-items:center;margin-top:2px;transition:all 0.2s;}
+.opt.is-selected .opt-check{background:var(--green);border-color:var(--green);}
+.opt-check svg{width:15px;height:15px;color:#fff;opacity:0;transition:opacity 0.15s;}
+.opt.is-selected .opt-check svg{opacity:1;}
 .opt-letter{flex-shrink:0;width:36px;height:36px;border-radius:10px;background:var(--ink-50);color:var(--ink-600);font-family:'Plus Jakarta Sans';font-weight:800;font-size:14px;display:grid;place-items:center;transition:all 0.2s;}
 .opt-text{flex:1;padding-top:5px;font-size:16px;color:#000;font-weight:400;}
 .opt.is-correct{border-color:var(--green);background:#e6f7ed;}
@@ -128,15 +134,21 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink
 .justif-body{font-size:15px;color:#000;line-height:1.7;margin:0;}
 
 /* Nav */
-.q-nav{margin-top:22px;display:flex;justify-content:flex-end;}
+.q-nav{margin-top:22px;display:flex;justify-content:space-between;gap:12px;align-items:center;}
+.btn-prev{background:var(--ink-50);color:var(--ink-600);border:2px solid var(--ink-200);font-size:15px;font-weight:700;padding:12px 22px;border-radius:14px;box-shadow:0 4px 0 var(--ink-200);cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:8px;}
+.btn-prev:hover:not:disabled{background:var(--ink-100);}
+.btn-prev:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink-200);}
+.btn-prev:disabled{opacity:0.35;cursor:not-allowed;box-shadow:none;}
 .btn-next{background:var(--green);color:#fff;font-size:16px;font-weight:800;padding:13px 28px;border-radius:14px;box-shadow:0 6px 0 #007a38,0 8px 20px rgba(0,158,73,0.35);border:none;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:10px;}
 .btn-next:hover{filter:brightness(1.06);}
 .btn-next:active{transform:translateY(4px);box-shadow:0 2px 0 #007a38,0 3px 8px rgba(0,158,73,0.3);}
+.btn-next:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none;transform:none;}
+.answer-warn{font-size:13px;color:var(--orange);font-weight:600;text-align:center;flex:1;}
 
 /* Dots */
 .dots{margin-top:18px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
 .dot{width:10px;height:10px;border-radius:99px;background:var(--ink-200);transition:all 0.2s;border:none;cursor:pointer;padding:0;}
-.dot.active{background:var(--ink-700);transform:scale(1.4);}
+.dot.active{background:var(--orange);transform:scale(1.4);}
 .dot.correct{background:var(--green);}
 .dot.wrong{background:var(--red);}
 
@@ -225,6 +237,8 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink
   .exam-header,.toolbar,.content{padding-left:16px;padding-right:16px;}
   .q-card{padding:22px 16px;}
   .q-text{font-size:17px;}
+  .q-nav{flex-direction:column-reverse;gap:10px;}
+  .btn-next,.btn-prev{width:100%;justify-content:center;}
   .stats{grid-template-columns:1fr 1fr 1fr;}
   .ring-score{font-size:42px;}
   .brand-wordmark{font-size:22px;}
@@ -246,12 +260,12 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--ink
           </svg>
         </div>
         <div>
-          <div class="brand-wordmark"><span class="alfa">ALFA</span> <span class="fisc">FISC</span></div>
+          <div class="brand-wordmark"><span class="alfa">Alfa</span> <span class="fisc">fisc</span></div>
           <div class="brand-tag">Préparation Concours</div>
         </div>
       </div>
       <div class="contact-info">
-        <strong>Facebook:</strong> ALFA FISC POUR LES DÉBUTANTS<br>
+        <strong>Facebook:</strong> Alfa fisc POUR LES DÉBUTANTS<br>
         <strong>WhatsApp:</strong> +226 66 47 70 70
       </div>
     </div>
@@ -314,7 +328,7 @@ function initQuestions(){
 function startExam(){
   QUESTIONS = initQuestions();
   current = 0;
-  answers = new Array(QUESTIONS.length).fill(null);
+  answers = new Array(QUESTIONS.length).fill(null).map(()=>[]);
   validated = new Array(QUESTIONS.length).fill(false);
   render();
 }
@@ -324,13 +338,21 @@ const dotsEl = document.getElementById('dots');
 const progressFill = document.getElementById('progressFill');
 const progressLabel = document.getElementById('progressLabel');
 
+function arraysEqual(a,b){
+  if(!a||!b) return false;
+  if(a.length!==b.length) return false;
+  const aa=[...a].sort(), bb=[...b].sort();
+  return aa.every((x,i)=>x===bb[i]);
+}
+
 function renderDots(){
   dotsEl.innerHTML = '';
   QUESTIONS.forEach((q,i)=>{
     const b = document.createElement('button');
-    b.className = 'dot' + (i===current?' active':'') + (validated[i]?(answers[i]===q.answer?' correct':' wrong'):'');
+    const answered = answers[i] && answers[i].length > 0;
+    b.className = 'dot' + (i===current?' active':'') + (validated[i]?(arraysEqual(answers[i],q.answer)?' correct':' wrong'):'') + (answered && !validated[i] ? ' answered':'');
     b.title = 'Question ' + (i+1);
-    b.onclick = ()=>{ if(i<=current || validated[i]) { current=i; render(); } };
+    b.onclick = ()=>{ if(i<=current || answered || validated[i]) { current=i; render(); } };
     dotsEl.appendChild(b);
   });
 }
@@ -339,26 +361,34 @@ function render(){
   if(current >= QUESTIONS.length){ renderResults(); return; }
   const q = QUESTIONS[current];
   const isV = validated[current];
-  const userAns = answers[current];
-  const correct = isV && userAns === q.answer;
+  const userAns = answers[current] || [];
+  const isMulti = q.answer.length > 1;
+  const correct = isV && arraysEqual(userAns, q.answer);
 
   progressLabel.textContent = 'Question ' + (current+1) + ' / ' + QUESTIONS.length;
   progressFill.style.width = Math.round((current/QUESTIONS.length)*100) + '%';
 
   let html = '<div class="q-card">';
   html += '<span class="q-chip ' + (isV ? (correct?'correct':'wrong') : 'idle') + '">' + (isV ? (correct?'Correct':'Incorrect') : ('Question ' + (current+1))) + '</span>';
+  if(!isV && isMulti){
+    html += '<div class="multi-hint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Plusieurs réponses possibles — cochez toutes les bonnes</div>';
+  }
   html += '<h2 class="q-text">' + q.question + '</h2>';
   html += '<div class="options">';
   q.options.forEach(opt=>{
-    const isAns = opt.letter === q.answer;
-    const isUser = opt.letter === userAns;
+    const isAns = q.answer.indexOf(opt.letter) !== -1;
+    const isUser = userAns.indexOf(opt.letter) !== -1;
     let cls = '', mark = '';
+    if(isUser && !isV) cls = ' is-selected';
     if(isV){
       if(isAns){ cls=' is-correct'; mark=' ✓'; }
       else if(isUser && !isAns){ cls=' is-wrong'; mark=' ✕'; }
     }
-    const handler = isV ? 'disabled' : 'onclick="selectAnswer(\\''+opt.letter+'\\')"';
+    const handler = isV ? 'disabled' : 'onclick="toggleAnswer(\\''+opt.letter+'\\')"';
     html += '<button class="opt'+cls+'" '+handler+'>';
+    if(!isV){
+      html += '<span class="opt-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
+    }
     html += '<span class="opt-letter">'+opt.letter+'</span>';
     html += '<span class="opt-text">'+opt.text+'</span>';
     if(mark) html += '<span class="opt-mark">'+mark+'</span>';
@@ -373,20 +403,41 @@ function render(){
     html += '<p class="justif-body">'+q.justification+'</p></div>';
   }
 
+  // Navigation
+  const hasAnswer = userAns.length > 0;
+  const last = current+1 >= QUESTIONS.length;
+  html += '<div class="q-nav">';
+  html += '<button class="btn-prev" onclick="prev()" '+(current===0?'disabled':'')+'>← Précédent</button>';
   if(isV){
-    const last = current+1 >= QUESTIONS.length;
-    html += '<div class="q-nav"><button class="btn-next" onclick="next()">'+(last?'Voir les résultats':'Question suivante')+' →</button></div>';
+    html += '<button class="btn-next" onclick="next()">'+(last?'Voir les résultats':'Question suivante')+' →</button>';
+  } else if(MODE === 'end'){
+    html += '<button class="btn-next" onclick="confirmAndNext()" '+(hasAnswer?'':'disabled')+'>'+(last?'Terminer et corriger':'Valider et continuer')+' →</button>';
+    if(!hasAnswer) html += '<span class="answer-warn">Veuillez sélectionner au moins une réponse</span>';
+  } else {
+    html += '<button class="btn-next" onclick="confirmAndNext()" '+(hasAnswer?'':'disabled')+'>'+(last?'Voir les résultats':'Valider')+' ✓</button>';
+    if(!hasAnswer) html += '<span class="answer-warn">Veuillez sélectionner au moins une réponse</span>';
   }
+  html += '</div>';
   html += '</div>';
   quizEl.innerHTML = html;
   renderDots();
   if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([quizEl]);
 }
 
-function selectAnswer(letter){
-  answers[current] = letter;
+function toggleAnswer(letter){
+  if(validated[current]) return;
+  const arr = answers[current] || [];
+  const idx = arr.indexOf(letter);
+  if(idx === -1){ arr.push(letter); }
+  else { arr.splice(idx,1); }
+  answers[current] = arr;
+  render();
+}
+
+function confirmAndNext(){
+  const arr = answers[current] || [];
+  if(arr.length === 0) return;
   if(MODE === 'end'){
-    validated[current] = false;
     if(current+1 < QUESTIONS.length){ current++; }
     else { finishExam(); }
     render();
@@ -396,6 +447,10 @@ function selectAnswer(letter){
   render();
 }
 
+function prev(){
+  if(current > 0){ current--; render(); }
+}
+
 function next(){
   if(current+1 < QUESTIONS.length){ current++; }
   else { finishExam(); }
@@ -403,11 +458,13 @@ function next(){
 }
 
 function finishExam(){
-  for(let i=0;i<QUESTIONS.length;i++) if(answers[i]!==null) validated[i]=true;
+  for(let i=0;i<QUESTIONS.length;i++){
+    if(answers[i] && answers[i].length > 0) validated[i]=true;
+  }
   current = QUESTIONS.length;
 }
 
-function getScore(){ let s=0; for(let i=0;i<QUESTIONS.length;i++) if(answers[i]===QUESTIONS[i].answer) s++; return s; }
+function getScore(){ let s=0; for(let i=0;i<QUESTIONS.length;i++) if(arraysEqual(answers[i],QUESTIONS[i].answer)) s++; return s; }
 
 function renderResults(){
   const score = getScore();
@@ -447,8 +504,7 @@ function renderResults(){
   html += '<div class="stat"><div class="stat-val" style="color:var(--ink-700)">'+pct+'%</div><div class="stat-lbl">Réussite</div></div>';
   html += '</div>';
 
-  // Actions
-  const missed = QUESTIONS.filter((_,i)=>answers[i]!==QUESTIONS[i].answer).length;
+  const missed = QUESTIONS.filter((_,i)=>!arraysEqual(answers[i],QUESTIONS[i].answer)).length;
   html += '<div class="results-actions">';
   html += '<button class="btn btn-green" onclick="showCorrectionReview()">Voir la correction</button>';
   html += '<button class="btn btn-blue" onclick="promptNameForPdf()">Télécharger la correction (PDF)</button>';
@@ -470,14 +526,14 @@ function showCorrectionReview(){
   if(!el) return;
   let html = '<div class="review-section"><h3 class="review-title">Correction détaillée</h3>';
   QUESTIONS.forEach((q,i)=>{
-    const u = answers[i];
-    const ok = u === q.answer;
+    const u = answers[i] || [];
+    const ok = arraysEqual(u, q.answer);
     html += '<div class="review-item'+(ok?' is-correct':'')+'">';
     html += '<p class="review-q">Q'+(i+1)+'. '+q.question+'</p>';
     html += '<div class="review-opts">';
     q.options.forEach(opt=>{
-      const isAns = opt.letter === q.answer;
-      const isUser = opt.letter === u;
+      const isAns = q.answer.indexOf(opt.letter) !== -1;
+      const isUser = u.indexOf(opt.letter) !== -1;
       let cls = '';
       if(isAns) cls = ' correct';
       else if(isUser && !isAns) cls = ' wrong-pick';
@@ -496,7 +552,7 @@ function showCorrectionReview(){
 }
 
 function retryMissed(){
-  const missed = QUESTIONS.filter((_,i)=>answers[i]!==QUESTIONS[i].answer);
+  const missed = QUESTIONS.filter((_,i)=>!arraysEqual(answers[i],QUESTIONS[i].answer));
   if(missed.length === 0) return;
   QUESTIONS = missed.map(q=>{
     const opts = SHUFFLE_O ? shuffle(q.options) : [...q.options];
@@ -504,7 +560,7 @@ function retryMissed(){
   });
   if(SHUFFLE_Q) QUESTIONS = shuffle(QUESTIONS);
   current = 0;
-  answers = new Array(QUESTIONS.length).fill(null);
+  answers = new Array(QUESTIONS.length).fill(null).map(()=>[]);
   validated = new Array(QUESTIONS.length).fill(false);
   render();
 }
@@ -544,10 +600,11 @@ function buildPrintDocument(name){
   const total = QUESTIONS.length;
   const printRoot = document.getElementById('print-root');
   let html = '';
+  const FOOTER = 'AVEC Alfa fisc, VISEZ L\\'EXCELLENCE';
 
   // Page 1: Questions
   html += '<div class="print-page"><div class="print-main-border">';
-  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">ALFA</span> <span class="fisc">FISC</span> — POUR LES DÉBUTANTS</span><span class="print-contact">Facebook: ALFA FISC POUR LES DÉBUTANTS · WhatsApp: +226 66 47 70 70</span></div>';
+  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">Alfa</span> <span class="fisc">fisc</span> — POUR LES DÉBUTANTS</span><span class="print-contact">Facebook: Alfa fisc POUR LES DÉBUTANTS · WhatsApp: +226 66 47 70 70</span></div>';
   html += '<div class="print-title-box"><h1>${escJs(examTitle)}</h1></div>';
   html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span> · Score: <span>'+score+' / '+total+'</span></div>';
   html += '<div class="print-content">';
@@ -560,42 +617,41 @@ function buildPrintDocument(name){
     html += '</div>';
   });
   html += '</div>';
-  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\\'EXCELLENCE</em></div>';
+  html += '<div class="print-footer"><em>'+FOOTER+'</em></div>';
   html += '<div class="print-page-num">Page 1 / 3</div>';
   html += '</div></div>';
 
   // Page 2: Answer table
   html += '<div class="print-page"><div class="print-main-border">';
-  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">ALFA</span> <span class="fisc">FISC</span> — POUR LES DÉBUTANTS</span><span class="print-contact">WhatsApp: +226 66 47 70 70</span></div>';
+  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">Alfa</span> <span class="fisc">fisc</span> — POUR LES DÉBUTANTS</span><span class="print-contact">WhatsApp: +226 66 47 70 70</span></div>';
   html += '<div class="print-title-box"><h1>RÉPONSES — ${escJs(examTitle)}</h1></div>';
   html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span></div>';
-  // answer table in chunks of 10
   for(let i=0;i<QUESTIONS.length;i+=10){
     const chunk = QUESTIONS.slice(i, i+10);
     html += '<table class="print-corr-table"><tr class="print-row-num">';
     chunk.forEach((q,ci)=> html += '<td>Q'+(i+ci+1)+'</td>');
     html += '</tr><tr class="print-row-ans">';
     chunk.forEach((q,ci)=>{
-      const uAns = answers[i+ci];
-      const ok = uAns === q.answer;
-      html += '<td class="'+(ok?'correct':'')+'">'+q.answer+'</td>';
+      const uAns = answers[i+ci] || [];
+      const ok = arraysEqual(uAns, q.answer);
+      html += '<td class="'+(ok?'correct':'')+'">'+q.answer.join(',')+'</td>';
     });
     html += '</tr></table>';
   }
-  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\\'EXCELLENCE</em></div>';
+  html += '<div class="print-footer"><em>'+FOOTER+'</em></div>';
   html += '<div class="print-page-num">Page 2 / 3</div>';
   html += '</div></div>';
 
   // Page 3: Justifications
   html += '<div class="print-page"><div class="print-main-border">';
-  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">ALFA</span> <span class="fisc">FISC</span> — POUR LES DÉBUTANTS</span><span class="print-contact">WhatsApp: +226 66 47 70 70</span></div>';
+  html += '<div class="print-header-top"><span class="print-brand"><span class="alfa">Alfa</span> <span class="fisc">fisc</span> — POUR LES DÉBUTANTS</span><span class="print-contact">WhatsApp: +226 66 47 70 70</span></div>';
   html += '<div class="print-title-box"><h1>EXPLICATIONS — ${escJs(examTitle)}</h1></div>';
   html += '<div class="print-candidate">Candidat: <span>'+escapeHtml(name)+'</span></div>';
   html += '<div class="print-justif-title">Justifications et Explications</div>';
   QUESTIONS.forEach((q,i)=>{
     html += '<div class="print-justif-item"><strong>Q'+(i+1)+' :</strong> '+q.justification+'</div>';
   });
-  html += '<div class="print-footer"><em>AVEC ALFA FISC, VISEZ L\\'EXCELLENCE</em></div>';
+  html += '<div class="print-footer"><em>'+FOOTER+'</em></div>';
   html += '<div class="print-page-num">Page 3 / 3</div>';
   html += '</div></div>';
 

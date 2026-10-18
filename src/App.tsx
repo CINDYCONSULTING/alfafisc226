@@ -39,7 +39,7 @@ export default function App() {
       <footer className="border-t border-ink-100 bg-white">
         <div className="container-page py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-ink-400">
           <p className="flex items-center gap-2">
-            <span className="brand-wordmark text-lg"><span className="alfa">ALFA</span> <span className="fisc">FISC</span></span>
+            <span className="brand-wordmark text-lg"><span className="alfa">Alfa</span> <span className="fisc">fisc</span></span>
             <span className="text-ink-300">—</span>
             <span className="font-medium">Générateur de sujets QCM interactifs</span>
           </p>
