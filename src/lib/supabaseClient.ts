@@ -48,6 +48,7 @@ export interface Attempt {
   correct_array: boolean[];
   started_at: string;
   finished_at: string | null;
+  exams?: { title: string } | null;
 }
 
 const headers = () => ({
@@ -147,4 +148,26 @@ export async function submitAttempt(
   if (!res.ok) throw new Error('Failed to submit attempt');
   const data = await res.json();
   return data.attempt.id as string;
+}
+
+export async function listAllAttempts(): Promise<Attempt[]> {
+  const res = await fetch(`${EDGE_URL}/attempts`, { headers: headers() });
+  if (!res.ok) throw new Error('Failed to load attempts');
+  const data = await res.json();
+  return data.attempts as Attempt[];
+}
+
+export async function getExamAdmin(id: string): Promise<ExamFull | null> {
+  const res = await fetch(`${EDGE_URL}/exams/${id}/full`, { headers: headers() });
+  if (!res.ok) throw new Error('Failed to load exam');
+  const data = await res.json();
+  return data.exam as ExamFull | null;
+}
+
+export async function deleteAttempt(id: string): Promise<void> {
+  const res = await fetch(`${EDGE_URL}/attempts/${id}`, {
+    method: 'DELETE',
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error('Failed to delete attempt');
 }

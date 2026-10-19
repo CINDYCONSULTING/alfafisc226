@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, Lock, Plus, Trash2, Edit3, Eye, Users, X, Save,
   FileEdit, CheckCircle2, AlertTriangle, BarChart3, Download,
-  ArrowLeft, Eye as EyeIcon, Settings2, Timer, Shuffle, Play,
+  ArrowLeft, Settings2, Timer, Shuffle, FileText, TrendingUp,
+  Award, UserX,
 } from 'lucide-react';
 import {
-  adminLogin, listExams, getExam, createExam, updateExam, deleteExam,
-  listAttempts, type ExamMeta, type ExamFull, type Attempt, type QCMRow, type ExamSettings,
+  adminLogin, listExams, getExam, getExamAdmin, createExam, updateExam, deleteExam,
+  listAttempts, listAllAttempts, deleteAttempt,
+  type ExamMeta, type ExamFull, type Attempt, type QCMRow, type ExamSettings,
 } from '@/lib/supabaseClient';
 import { parseQCMText, SAMPLE_QCM } from '@/lib/qcm';
 import { generateExamHtml } from '@/lib/generateExam';
@@ -80,7 +82,8 @@ type View =
   | { mode: 'list' }
   | { mode: 'create' }
   | { mode: 'edit'; examId: string }
-  | { mode: 'attempts'; examId: string };
+  | { mode: 'attempts'; examId: string }
+  | { mode: 'all-candidates' };
 
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [view, setView] = useState<View>({ mode: 'list' });
@@ -112,6 +115,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   if (view.mode === 'attempts') {
     return <AttemptsView examId={view.examId} onBack={() => setView({ mode: 'list' })} />;
   }
+  if (view.mode === 'all-candidates') {
+    return <AllCandidatesView onBack={() => setView({ mode: 'list' })} />;
+  }
 
   return (
     <div className="container-page py-8">
@@ -125,7 +131,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <p className="text-ink-500 text-sm">Gérez vos sujets et suivez les candidats</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setView({ mode: 'all-candidates' })} className="btn-3d-blue">
+            <Users className="w-4 h-4" />
+            Tous les candidats
+          </button>
           <button onClick={() => setView({ mode: 'create' })} className="btn-3d-green">
             <Plus className="w-4 h-4" />
             Nouveau sujet
@@ -248,7 +258,7 @@ function ExamEditor({ examId, onBack, onSaved }: { examId?: string; onBack: () =
     if (!examId) return;
     (async () => {
       try {
-        const exam = await getExam(examId);
+        const exam = await getExamAdmin(examId);
         if (exam) {
           setTitle(exam.title);
           setMode(exam.settings_json.mode || 'immediate');
@@ -444,7 +454,7 @@ function ExamEditor({ examId, onBack, onSaved }: { examId?: string; onBack: () =
           <div className="card p-5 space-y-3">
             <button onClick={handlePreview} disabled={!hasQuestions}
               className="btn-3d-blue w-full disabled:opacity-40">
-              <EyeIcon className="w-4 h-4" />
+              <Eye className="w-4 h-4" />
               Prévisualiser
             </button>
             <button onClick={handleSave} disabled={!title.trim() || !hasQuestions || saving}
@@ -482,6 +492,7 @@ function ExamEditor({ examId, onBack, onSaved }: { examId?: string; onBack: () =
   );
 }
 
+// --- Per-exam attempts view ---
 function AttemptsView({ examId, onBack }: { examId: string; onBack: () => void }) {
   const [exam, setExam] = useState<ExamFull | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -489,25 +500,42 @@ function AttemptsView({ examId, onBack }: { examId: string; onBack: () => void }
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<Attempt | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [ex, atts] = await Promise.all([getExam(examId), listAttempts(examId)]);
-        setExam(ex);
-        setAttempts(atts);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Erreur');
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const load = useCallback(async () => {
+    try {
+      const [ex, atts] = await Promise.all([getExamAdmin(examId), listAttempts(examId)]);
+      setExam(ex);
+      setAttempts(atts);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setLoading(false);
+    }
   }, [examId]);
+
+  useEffect(() => { load(); }, [load]);
 
   if (loading) return <div className="container-page py-16 text-center text-ink-400">Chargement des résultats...</div>;
 
   const avgScore = attempts.length > 0
     ? Math.round((attempts.reduce((s, a) => s + (a.score / a.total) * 100, 0) / attempts.length))
     : 0;
+
+  const exportCsv = () => {
+    const rows = [['Candidat', 'Note', 'Total', 'Pourcentage', 'Questions ratées', 'Date'], ...attempts.map(a => {
+      const pct = Math.round((a.score / a.total) * 100);
+      const wrong = a.correct_array.filter(c => !c).length;
+      const date = a.finished_at ? new Date(a.finished_at).toLocaleString('fr-FR') : '—';
+      return [a.candidate_name, String(a.score), String(a.total), `${pct}%`, String(wrong), date];
+    })];
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `candidats_${exam?.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'examen'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="container-page py-8">
@@ -518,21 +546,29 @@ function AttemptsView({ examId, onBack }: { examId: string; onBack: () => void }
 
       {error && <div className="card p-4 mb-6 text-alfa-red font-semibold">{error}</div>}
 
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-11 h-11 rounded-xl bg-ink-900 grid place-items-center">
-          <BarChart3 className="w-6 h-6 text-alfa-green" />
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-ink-900 grid place-items-center">
+            <BarChart3 className="w-6 h-6 text-alfa-green" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-extrabold text-ink-900">{exam?.title || 'Sujet'}</h1>
+            <p className="text-ink-500 text-sm">Résultats des candidats</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-ink-900">{exam?.title || 'Sujet'}</h1>
-          <p className="text-ink-500 text-sm">Résultats des candidats</p>
-        </div>
+        {attempts.length > 0 && (
+          <button onClick={exportCsv} className="btn-3d-blue">
+            <Download className="w-4 h-4" />
+            Exporter CSV
+          </button>
+        )}
       </div>
 
       {attempts.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-6">
           <StatCard label="Candidats" value={attempts.length.toString()} icon={Users} color="text-ink-900" />
-          <StatCard label="Note moyenne" value={`${avgScore}%`} icon={BarChart3} color="text-alfa-green" />
-          <StatCard label="Meilleure note" value={`${Math.max(...attempts.map(a => Math.round((a.score / a.total) * 100)))}%`} icon={CheckCircle2} color="text-alfa-green" />
+          <StatCard label="Note moyenne" value={`${avgScore}%`} icon={TrendingUp} color="text-alfa-green" />
+          <StatCard label="Meilleure note" value={`${Math.max(...attempts.map(a => Math.round((a.score / a.total) * 100)))}%`} icon={Award} color="text-alfa-green" />
         </div>
       )}
 
@@ -559,7 +595,7 @@ function AttemptsView({ examId, onBack }: { examId: string; onBack: () => void }
                     <p className="text-xs text-ink-400">Terminé le {finished}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 sm:gap-6">
                   <div className="text-center">
                     <div className={`font-display text-xl font-extrabold ${pct >= 50 ? 'text-alfa-green' : 'text-alfa-red'}`}>{att.score}/{att.total}</div>
                     <div className="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Note</div>
@@ -569,8 +605,18 @@ function AttemptsView({ examId, onBack }: { examId: string; onBack: () => void }
                     <div className="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Ratées</div>
                   </div>
                   <button onClick={() => setSelected(att)} className="btn-ghost px-3 py-2 text-sm font-semibold flex items-center gap-1.5">
-                    <EyeIcon className="w-4 h-4" />
+                    <Eye className="w-4 h-4" />
                     Détails
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (confirm(`Supprimer le résultat de ${att.candidate_name} ?`)) {
+                        try { await deleteAttempt(att.id); load(); } catch (e) { setError(e instanceof Error ? e.message : 'Erreur'); }
+                      }
+                    }}
+                    className="btn-ghost px-3 py-2 text-sm font-semibold flex items-center gap-1.5 text-alfa-red hover:bg-alfa-red/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -586,19 +632,181 @@ function AttemptsView({ examId, onBack }: { examId: string; onBack: () => void }
   );
 }
 
+// --- All candidates across all exams ---
+function AllCandidatesView({ onBack }: { onBack: () => void }) {
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const list = await listAllAttempts();
+      setAttempts(list);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const filtered = attempts.filter(a =>
+    a.candidate_name.toLowerCase().includes(search.toLowerCase()) ||
+    (a.exams?.title || '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  const avgScore = filtered.length > 0
+    ? Math.round((filtered.reduce((s, a) => s + (a.score / a.total) * 100, 0) / filtered.length))
+    : 0;
+
+  const exportCsv = () => {
+    const rows = [['Candidat', 'Sujet', 'Note', 'Total', 'Pourcentage', 'Questions ratées', 'Date'], ...filtered.map(a => {
+      const pct = Math.round((a.score / a.total) * 100);
+      const wrong = a.correct_array.filter(c => !c).length;
+      const date = a.finished_at ? new Date(a.finished_at).toLocaleString('fr-FR') : '—';
+      return [a.candidate_name, a.exams?.title || '—', String(a.score), String(a.total), `${pct}%`, String(wrong), date];
+    })];
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tous_les_candidats.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="container-page py-8">
+      <button onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-ink-500 hover:text-ink-800 mb-6">
+        <ArrowLeft className="w-4 h-4" />
+        Retour au tableau de bord
+      </button>
+
+      {error && <div className="card p-4 mb-6 text-alfa-red font-semibold">{error}</div>}
+
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-ink-900 grid place-items-center">
+            <Users className="w-6 h-6 text-alfa-green" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-extrabold text-ink-900">Tous les candidats</h1>
+            <p className="text-ink-500 text-sm">Liste complète des candidats ayant traité un sujet</p>
+          </div>
+        </div>
+        {attempts.length > 0 && (
+          <button onClick={exportCsv} className="btn-3d-blue">
+            <Download className="w-4 h-4" />
+            Exporter CSV
+          </button>
+        )}
+      </div>
+
+      {filtered.length > 0 && (
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <StatCard label="Total candidats" value={filtered.length.toString()} icon={Users} color="text-ink-900" />
+          <StatCard label="Note moyenne" value={`${avgScore}%`} icon={TrendingUp} color="text-alfa-green" />
+          <StatCard label="Réussite ≥50%" value={filtered.filter(a => (a.score / a.total) * 100 >= 50).length.toString()} icon={Award} color="text-alfa-green" />
+        </div>
+      )}
+
+      {attempts.length > 0 && (
+        <div className="mb-4">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher par nom de candidat ou sujet..."
+            className="input-field"
+          />
+        </div>
+      )}
+
+      {loading ? (
+        <div className="card p-12 text-center text-ink-400">Chargement...</div>
+      ) : filtered.length === 0 ? (
+        <div className="card p-12 text-center">
+          <UserX className="w-12 h-12 text-ink-200 mx-auto mb-4" />
+          <h3 className="font-display text-lg font-bold text-ink-700 mb-2">
+            {search ? 'Aucun résultat' : 'Aucun candidat pour le moment'}
+          </h3>
+          <p className="text-ink-400 text-sm">
+            {search ? 'Essayez un autre terme de recherche.' : "Les candidats apparaîtront ici dès qu'ils termineront un sujet."}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((att, idx) => {
+            const pct = Math.round((att.score / att.total) * 100);
+            const wrongCount = att.correct_array.filter(c => !c).length;
+            const finished = att.finished_at ? new Date(att.finished_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+            return (
+              <div key={att.id} className="card p-5 flex items-center justify-between gap-4 flex-wrap hover:shadow-card transition-shadow">
+                <div className="flex items-center gap-4 flex-1 min-w-[200px]">
+                  <div className="w-10 h-10 rounded-xl bg-ink-50 text-ink-500 grid place-items-center font-bold text-sm">
+                    {idx + 1}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-display font-bold text-ink-900 truncate">{att.candidate_name}</h3>
+                    <p className="text-xs text-ink-400 truncate">
+                      <FileText className="w-3 h-3 inline mr-1" />
+                      {att.exams?.title || '—'} · {finished}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 sm:gap-6">
+                  <div className="text-center">
+                    <div className={`font-display text-xl font-extrabold ${pct >= 50 ? 'text-alfa-green' : 'text-alfa-red'}`}>{att.score}/{att.total}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Note</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-display text-xl font-extrabold text-alfa-red">{wrongCount}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Ratées</div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (confirm(`Supprimer le résultat de ${att.candidate_name} ?`)) {
+                        try { await deleteAttempt(att.id); load(); } catch (e) { setError(e instanceof Error ? e.message : 'Erreur'); }
+                      }
+                    }}
+                    className="btn-ghost px-3 py-2 text-sm font-semibold flex items-center gap-1.5 text-alfa-red hover:bg-alfa-red/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AttemptDetailModal({ attempt, exam, onClose }: { attempt: Attempt; exam: ExamFull; onClose: () => void }) {
   const questions = exam.qcm_json;
+  const pct = Math.round((attempt.score / attempt.total) * 100);
   return (
     <div className="fixed inset-0 bg-ink-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white border-b border-ink-100 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-ink-100 px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h2 className="font-display text-xl font-extrabold text-ink-900">{attempt.candidate_name}</h2>
-            <p className="text-sm text-ink-500">Score: {attempt.score}/{attempt.total} — {Math.round((attempt.score / attempt.total) * 100)}%</p>
+            <p className="text-sm text-ink-500">Score: {attempt.score}/{attempt.total} — {pct}%</p>
           </div>
-          <button onClick={onClose} className="w-9 h-9 rounded-lg hover:bg-ink-100 grid place-items-center">
-            <X className="w-5 h-5 text-ink-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            <span className={`label-chip ${pct >= 50 ? 'bg-alfa-green/10 text-alfa-green' : 'bg-alfa-red/10 text-alfa-red'}`}>
+              {pct >= 50 ? 'Réussi' : 'Échec'}
+            </span>
+            <button onClick={onClose} className="w-9 h-9 rounded-lg hover:bg-ink-100 grid place-items-center">
+              <X className="w-5 h-5 text-ink-500" />
+            </button>
+          </div>
         </div>
         <div className="p-6 space-y-4">
           {questions.map((q, i) => {

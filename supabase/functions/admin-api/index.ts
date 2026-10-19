@@ -136,6 +136,44 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // GET /admin-api/attempts — list all attempts across all exams (with exam title)
+    if (path === "/attempts" && req.method === "GET") {
+      const { data, error } = await supabase
+        .from("attempts")
+        .select("id, exam_id, candidate_name, score, total, answers_json, correct_array, started_at, finished_at, exams(title)")
+        .order("finished_at", { ascending: false });
+      if (error) throw error;
+      return new Response(JSON.stringify({ attempts: data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // GET /admin-api/exams/:id/full — get full exam including qcm_json + settings for admin
+    const examFullMatch = path.match(/^\/exams\/([a-f0-9-]+)\/full$/);
+    if (examFullMatch && req.method === "GET") {
+      const id = examFullMatch[1];
+      const { data, error } = await supabase
+        .from("exams")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+      return new Response(JSON.stringify({ exam: data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // DELETE /admin-api/attempts/:id — delete a single attempt
+    const attemptDeleteMatch = path.match(/^\/attempts\/([a-f0-9-]+)$/);
+    if (attemptDeleteMatch && req.method === "DELETE") {
+      const id = attemptDeleteMatch[1];
+      const { error } = await supabase.from("attempts").delete().eq("id", id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Route not found" }), {
       status: 404,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
