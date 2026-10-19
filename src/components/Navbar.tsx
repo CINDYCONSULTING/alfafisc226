@@ -1,6 +1,6 @@
-import { Home, FileEdit } from 'lucide-react';
+import { Home, FileEdit, Shield, Users } from 'lucide-react';
 
-export type Route = 'home' | 'generator';
+export type Route = 'home' | 'admin' | 'exams';
 
 interface NavbarProps {
   route: Route;
@@ -23,7 +23,7 @@ export default function Navbar({ route, onNavigate }: NavbarProps) {
               <span className="alfa">Alfa</span> <span className="fisc">fisc</span>
             </span>
             <span className="text-[10px] uppercase tracking-[0.18em] text-ink-400 font-semibold mt-0.5">
-              Générateur de Sujets
+              Plateforme QCM
             </span>
           </div>
         </button>
@@ -39,13 +39,22 @@ export default function Navbar({ route, onNavigate }: NavbarProps) {
             <span className="hidden sm:inline">Accueil</span>
           </button>
           <button
-            onClick={() => onNavigate('generator')}
+            onClick={() => onNavigate('exams')}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
-              route === 'generator' ? 'bg-ink-800 text-white shadow-soft' : 'text-ink-600 hover:text-ink-900 hover:bg-ink-50'
+              route === 'exams' ? 'bg-ink-800 text-white shadow-soft' : 'text-ink-600 hover:text-ink-900 hover:bg-ink-50'
             }`}
           >
-            <FileEdit className="w-4 h-4" />
-            <span className="hidden sm:inline">Générateur</span>
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">Candidats</span>
+          </button>
+          <button
+            onClick={() => onNavigate('admin')}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+              route === 'admin' ? 'bg-ink-800 text-white shadow-soft' : 'text-ink-600 hover:text-ink-900 hover:bg-ink-50'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span className="hidden sm:inline">Admin</span>
           </button>
         </nav>
       </div>

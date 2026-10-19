@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import Navbar, { type Route } from './components/Navbar';
 import HomePage from './components/HomePage';
-import GeneratorPage from './components/GeneratorPage';
+import AdminPage from './components/AdminPage';
+import ExamsPage from './components/ExamsPage';
 
 export default function App() {
   const [route, setRoute] = useState<Route>('home');
 
   useEffect(() => {
     const hash = window.location.hash.replace('#/', '').replace('#', '');
-    if (hash === 'generator' || hash === 'home') {
+    if (['home', 'admin', 'exams'].includes(hash)) {
       setRoute(hash as Route);
     }
   }, []);
@@ -22,7 +23,7 @@ export default function App() {
   useEffect(() => {
     const onHashChange = () => {
       const hash = window.location.hash.replace('#/', '').replace('#', '');
-      if (hash === 'generator' || hash === 'home') setRoute(hash as Route);
+      if (['home', 'admin', 'exams'].includes(hash)) setRoute(hash as Route);
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -33,7 +34,8 @@ export default function App() {
       <Navbar route={route} onNavigate={handleNavigate} />
       <main className="flex-1">
         {route === 'home' && <HomePage onNavigate={handleNavigate} />}
-        {route === 'generator' && <GeneratorPage />}
+        {route === 'admin' && <AdminPage />}
+        {route === 'exams' && <ExamsPage />}
       </main>
 
       <footer className="border-t border-ink-100 bg-white">
@@ -41,9 +43,9 @@ export default function App() {
           <p className="flex items-center gap-2">
             <span className="brand-wordmark text-lg"><span className="alfa">Alfa</span> <span className="fisc">fisc</span></span>
             <span className="text-ink-300">—</span>
-            <span className="font-medium">Générateur de sujets QCM interactifs</span>
+            <span className="font-medium">Plateforme de QCM interactifs</span>
           </p>
-          <p className="text-xs">Fichiers HTML autonomes, utilisables hors ligne</p>
+          <p className="text-xs">Avec Alfa fisc, visez l'excellence</p>
         </div>
       </footer>
     </div>
