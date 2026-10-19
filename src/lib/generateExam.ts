@@ -536,6 +536,20 @@ function finishExam(){
     if(answers[i] && answers[i].length > 0) validated[i]=true;
   }
   current = QUESTIONS.length;
+  reportResults();
+}
+
+function reportResults(){
+  var score = getScore();
+  var total = QUESTIONS.length;
+  var correctArr = [];
+  var answersArr = [];
+  for(var i=0;i<QUESTIONS.length;i++){
+    correctArr.push(arraysEqual(answers[i], QUESTIONS[i].answer));
+    answersArr.push(answers[i] || []);
+  }
+  var payload = { type:'alfa-exam-complete', score: score, total: total, correctArray: correctArr, answers: answersArr, candidateName: candidateName };
+  try { window.parent.postMessage(payload, '*'); } catch(e){}
 }
 
 function getScore(){ let s=0; for(let i=0;i<QUESTIONS.length;i++) if(arraysEqual(answers[i],QUESTIONS[i].answer)) s++; return s; }

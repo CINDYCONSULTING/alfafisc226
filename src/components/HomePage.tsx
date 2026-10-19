@@ -97,7 +97,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             {[
               { icon: Eye, title: 'Correction immédiate', text: 'Le candidat voit la bonne réponse et la justification après chaque question.' },
               { icon: Shuffle, title: 'Mélange automatique', text: 'Questions et options mélangées à chaque session pour éviter la triche.' },
-              { icon: BarChart3, title: 'Suivi des notes', text: 'L'admin voit les noms, notes et erreurs détaillées de chaque candidat.' },
+              { icon: BarChart3, title: 'Suivi des notes', text: "L'admin voit les noms, notes et erreurs détaillées de chaque candidat." },
               { icon: Printer, title: 'Correction en PDF', text: 'Téléchargement PDF de la correction avec le nom du candidat.' },
             ].map((f, i) => {
               const Icon = f.icon;
