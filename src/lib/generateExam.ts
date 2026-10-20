@@ -341,6 +341,7 @@ let current = 0;
 let answers = [];
 let validated = [];
 let candidateName = '';
+let isPracticeSession = false; // true when retrying missed questions — results are NOT recorded/submitted
 
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
@@ -548,7 +549,7 @@ function reportResults(){
     correctArr.push(arraysEqual(answers[i], QUESTIONS[i].answer));
     answersArr.push(answers[i] || []);
   }
-  var payload = { type:'alfa-exam-complete', score: score, total: total, correctArray: correctArr, answers: answersArr, candidateName: candidateName };
+  var payload = { type:'alfa-exam-complete', score: score, total: total, correctArray: correctArr, answers: answersArr, candidateName: candidateName, isPractice: isPracticeSession };
   try { window.parent.postMessage(payload, '*'); } catch(e){}
 }
 
@@ -650,10 +651,12 @@ function retryMissed(){
   current = 0;
   answers = new Array(QUESTIONS.length).fill(null).map(()=>[]);
   validated = new Array(QUESTIONS.length).fill(false);
+  isPracticeSession = true; // do not record retries as a real attempt
   render();
 }
 
 function restartAll(){
+  isPracticeSession = false; // full restart is a real exam again
   startExam();
 }
 
@@ -747,6 +750,14 @@ document.addEventListener('click', function(e){
 });
 
 startExam();
+
+/* Listen for PDF trigger from parent (candidate correction overlay button) */
+window.addEventListener('message', function(e){
+  if(!e.data || e.data.type !== 'alfa-trigger-pdf') return;
+  var name = (e.data.candidateName && String(e.data.candidateName).trim()) || candidateName || 'Candidat';
+  candidateName = name;
+  Promise.resolve(buildPrintDocument(name)).then(function(){ window.print(); });
+});
 </script>
 </body>
 </html>`;

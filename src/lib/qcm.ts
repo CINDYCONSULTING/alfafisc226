@@ -27,7 +27,7 @@ const QCM_HEADER = /^\s*qcm\s*(\d+)\s*[:：\-]\s*(.*)$/i;
 const NUM_QUESTION = /^\s*(\d+)\s*[\.）\)]\s*(.*)$/;
 const OPTION_LINE = /^\s*([A-Ea-e])\s*[\.）\)]\s*(.*)$/;
 const ANSWER_LINE = /^\s*(?:réponse|reponse)\s*[:：]\s*([A-Ea-e](?:\s*[,，;]\s*[A-Ea-e])*)\s*$/i;
-const JUSTIF_LINE = /^\s*(?:justification|justif)\s*[:：]\s*(.*)$/i;
+const JUSTIF_LINE = /^\s*(?:justification|justif|explication|explications)\s*[:：]\s*(.*)$/i;
 const STRIP_ACCENTS = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 export function parseQCMText(raw: string): ParseResult {
@@ -91,7 +91,7 @@ export function parseQCMText(raw: string): ParseResult {
       const optMatch = trimmed.match(OPTION_LINE);
       const stripped = STRIP_ACCENTS(trimmed.toLowerCase());
       const looksLikeAnswer = stripped.startsWith('reponse') || stripped.startsWith('réponse');
-      const looksLikeJustif = stripped.startsWith('justification') || stripped.startsWith('justif');
+      const looksLikeJustif = stripped.startsWith('justification') || stripped.startsWith('justif') || stripped.startsWith('explication') || stripped.startsWith('explications');
 
       if (looksLikeAnswer) {
         const m = trimmed.match(/[:：]\s*([A-Ea-e](?:\s*[,，;]\s*[A-Ea-e])*)/);

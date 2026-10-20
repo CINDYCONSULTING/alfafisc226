@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, ArrowRight, BookOpen, CheckCircle2,
-  AlertTriangle, X, FileText, RotateCcw, Eye, Target,
+  AlertTriangle, X, FileText, RotateCcw, Eye, Target, Download,
 } from 'lucide-react';
 import {
   listExams, getExam, submitAttempt,
@@ -41,12 +41,13 @@ export default function ExamsPage() {
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.type !== 'alfa-exam-complete') return;
-      const { score, total, correctArray, answers } = e.data;
-      if (selectedExam && candidateName) {
+      const { score, total, correctArray, answers, isPractice } = e.data;
+      // Only record the real (full-exam) attempt — retries of missed questions are practice only.
+      if (selectedExam && candidateName && !isPractice) {
         submitAttempt(selectedExam.id, candidateName, score, total, answers, correctArray).catch(() => {});
       }
       const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-      setLastResult({ score, total, pct, correctArray });
+      setLastResult({ score, total, pct, correctArray, isPractice: !!isPractice });
       setPhase('done');
     };
     window.addEventListener('message', handler);
@@ -299,6 +300,13 @@ export default function ExamsPage() {
                   Utilisez le bouton « Télécharger la correction (PDF) » dans l'encadré ci-dessous
                 </span>
                 <button
+                  onClick={() => { if (iframeRef.current?.contentWindow) iframeRef.current.contentWindow.postMessage({ type: 'alfa-trigger-pdf', candidateName }, '*'); }}
+                  className="flex items-center gap-1.5 bg-alfa-green hover:brightness-110 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  PDF
+                </button>
+                <button
                   onClick={() => setShowCorrectionOverlay(false)}
                   className="flex items-center gap-1.5 text-white hover:bg-white/10 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
                 >
@@ -308,6 +316,7 @@ export default function ExamsPage() {
               </div>
             </div>
             <iframe
+              ref={iframeRef}
               srcDoc={examHtml}
               title="Correction"
               className="w-full flex-1 border-0 bg-white"
