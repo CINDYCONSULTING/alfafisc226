@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, ArrowRight, BookOpen, CheckCircle2,
-  AlertTriangle, X, FileText, RotateCcw, Eye,
+  AlertTriangle, X, FileText, RotateCcw, Eye, Target,
 } from 'lucide-react';
 import {
   listExams, getExam, submitAttempt,
@@ -18,7 +18,7 @@ export default function ExamsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedExam, setSelectedExam] = useState<ExamFull | null>(null);
-  const [lastResult, setLastResult] = useState<{ score: number; total: number; pct: number } | null>(null);
+  const [lastResult, setLastResult] = useState<{ score: number; total: number; pct: number; correctArray?: boolean[] } | null>(null);
   const [examHtml, setExamHtml] = useState('');
   const [showCorrectionOverlay, setShowCorrectionOverlay] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -46,7 +46,7 @@ export default function ExamsPage() {
         submitAttempt(selectedExam.id, candidateName, score, total, answers, correctArray).catch(() => {});
       }
       const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-      setLastResult({ score, total, pct });
+      setLastResult({ score, total, pct, correctArray });
       setPhase('done');
     };
     window.addEventListener('message', handler);
@@ -85,6 +85,24 @@ export default function ExamsPage() {
     setLastResult(null);
     setPhase('taking');
   };
+
+  const retryWrongOnly = () => {
+    if (!selectedExam || !lastResult?.correctArray) return;
+    const wrongQuestions = (selectedExam.qcm_json as unknown as QCMRow[])
+      .filter((_, i) => !lastResult.correctArray![i]);
+    if (wrongQuestions.length === 0) return;
+    const html = generateExamHtml(
+      `${selectedExam.title} — Questions ratées`,
+      wrongQuestions,
+      selectedExam.settings_json as ExamSettings,
+    );
+    setExamHtml(html);
+    setShowCorrectionOverlay(false);
+    setLastResult(null);
+    setPhase('taking');
+  };
+
+  const wrongCount = lastResult?.correctArray ? lastResult.correctArray.filter(c => !c).length : 0;
 
   // --- Phase: Name entry ---
   if (phase === 'name') {
@@ -244,7 +262,13 @@ export default function ExamsPage() {
                 <Eye className="w-4 h-4" />
                 Voir la correction
               </button>
-              <button onClick={retakeSameExam} className="btn-3d-green px-4 py-2.5 text-sm">
+              {wrongCount > 0 && (
+                <button onClick={retryWrongOnly} className="btn-3d-green px-4 py-2.5 text-sm">
+                  <Target className="w-4 h-4" />
+                  Revoir les {wrongCount} ratées
+                </button>
+              )}
+              <button onClick={retakeSameExam} className="btn-3d-blue px-4 py-2.5 text-sm">
                 <RotateCcw className="w-4 h-4" />
                 Refaire ce sujet
               </button>
@@ -304,6 +328,24 @@ export default function ExamsPage() {
               <p className="text-xs text-ink-400 mt-3">Votre note a été enregistrée et transmise à l'administrateur.</p>
             </div>
 
+            {/* Stat cards: correct vs wrong */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="card p-5 text-center">
+                <div className="w-11 h-11 rounded-xl bg-alfa-green/10 grid place-items-center mx-auto mb-2">
+                  <CheckCircle2 className="w-6 h-6 text-alfa-green" />
+                </div>
+                <div className="font-display text-3xl font-extrabold text-alfa-green">{total - wrongCount}</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-ink-400 mt-1">Réussies</div>
+              </div>
+              <div className="card p-5 text-center">
+                <div className="w-11 h-11 rounded-xl bg-alfa-red/10 grid place-items-center mx-auto mb-2">
+                  <AlertTriangle className="w-6 h-6 text-alfa-red" />
+                </div>
+                <div className="font-display text-3xl font-extrabold text-alfa-red">{wrongCount}</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-ink-400 mt-1">Ratées</div>
+              </div>
+            </div>
+
             {selectedExam && (
               <CorrectionList
                 questions={selectedExam.qcm_json}
@@ -314,7 +356,7 @@ export default function ExamsPage() {
               />
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4 flex-wrap">
               <button
                 onClick={() => setShowCorrectionOverlay(true)}
                 className="btn-3d-blue"
@@ -322,9 +364,15 @@ export default function ExamsPage() {
                 <Eye className="w-4 h-4" />
                 Voir la correction complète (avec PDF)
               </button>
-              <button onClick={retakeSameExam} className="btn-3d-green">
+              {wrongCount > 0 && (
+                <button onClick={retryWrongOnly} className="btn-3d-green">
+                  <Target className="w-4 h-4" />
+                  Revoir les {wrongCount} questions ratées
+                </button>
+              )}
+              <button onClick={retakeSameExam} className="btn-3d-blue">
                 <RotateCcw className="w-4 h-4" />
-                Refaire ce sujet
+                Refaire tout le sujet
               </button>
               <button
                 onClick={() => { setPhase('list'); setExamHtml(''); setLastResult(null); }}
